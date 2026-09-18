@@ -222,120 +222,124 @@ export function QuizContent({
   // ─── View 1: Setup Screen (No Quiz In Progress) ──────────────────────────
   if (questions.length === 0) {
     return (
-      <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-3xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
+      <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
         <Breadcrumbs items={quizBreadcrumbItems} />
         <div className="pb-6 border-b hairline">
           <div className="flex items-center gap-2 mb-2.5">
             <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
-            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500">
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500 font-sans">
               Assessment
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-ink leading-[1.05] tracking-tight">
               Adaptive Quiz
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-white border border-black/10 text-neutral-600 font-medium">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-white border border-black/10 text-neutral-600 font-sans font-medium">
               Mastery Assessment
             </span>
           </div>
-          <p className="text-sm text-neutral-600 mt-2 font-sans">
+          <p className="text-sm text-neutral-600 mt-2 font-sans max-w-2xl">
             Questions adapt to your mastery score and are strictly grounded in your study documents.
           </p>
         </div>
 
         {quizError && (
-          <Alert className="border-rose-200 bg-rose-50 text-rose-800 text-xs py-3 rounded-2xl">
+          <Alert className="border-rose-200 bg-rose-50 text-rose-800 text-xs py-3 rounded-2xl font-sans">
             <AlertDescription>{quizError}</AlertDescription>
           </Alert>
         )}
 
-        <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-10 subtle-shadow text-center space-y-6">
+        <div className="bg-white rounded-2xl border border-black/10 px-6 py-12 sm:px-12 sm:py-14 subtle-shadow text-center space-y-6">
           <div className="w-14 h-14 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
             <ClipboardCheck className="h-7 w-7 text-neutral-700" />
           </div>
 
-          <div className="space-y-2 max-w-md mx-auto">
-            <h3 className="display text-2xl sm:text-3xl font-bold text-ink tracking-tight">
+          <div className="space-y-3 max-w-xl mx-auto">
+            <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal text-ink tracking-tight">
               Prepare Your Assessment
-            </h3>
-            <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed font-sans">
-              Select a project and optional study document. The system generates 5 adaptive questions (multiple-choice & conceptual open-ended) to evaluate your knowledge.
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed font-sans max-w-lg mx-auto">
+              Select a project and optional study document. The system generates 5 adaptive questions (multiple-choice &amp; conceptual open-ended) to evaluate your knowledge.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-lg mx-auto w-full">
-            {/* Project Selector - Preserves Project Name strictly */}
-            <Select
-              value={selectedProject}
-              onValueChange={(v) => {
-                setSelectedProject(v ?? "");
-                setSelectedMaterial("ALL");
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-60 bg-white border-black/15 text-ink text-xs h-10 rounded-xl">
-                <SelectValue placeholder="Select project">
-                  {(val: string | null) => {
-                    const targetId = val || selectedProject;
-                    if (!targetId) return "Select project";
-                    const p = projects.find((proj) => proj.id === targetId);
-                    return p?.name ?? "Select project";
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl">
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Material Selector - Preserves Material Name strictly */}
-            {projectMaterials.length > 0 && (
+          <div className="pt-2 max-w-2xl mx-auto w-full">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3.5 w-full">
+              {/* Project Selector - Preserves Project Name strictly */}
               <Select
-                value={selectedMaterial}
-                onValueChange={(v) => setSelectedMaterial(v ?? "ALL")}
+                value={selectedProject}
+                onValueChange={(v) => {
+                  setSelectedProject(v ?? "");
+                  setSelectedMaterial("ALL");
+                }}
               >
-                <SelectTrigger className="w-full sm:w-56 bg-white border-black/15 text-ink text-xs h-10 rounded-xl">
-                  <SelectValue placeholder="All Materials">
+                <SelectTrigger className="w-full sm:flex-1 bg-white border border-black/15 text-ink text-xs h-11 rounded-xl px-3 hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
+                  <SelectValue placeholder="Select project">
                     {(val: string | null) => {
-                      const cur = val || selectedMaterial;
-                      if (cur === "ALL") return "All Materials (Combined)";
-                      const m = projectMaterials.find((mat) => mat.id === cur);
-                      return m?.file_name ?? "Select material";
+                      const targetId = val || selectedProject;
+                      if (!targetId) return "Select project";
+                      const p = projects.find((proj) => proj.id === targetId);
+                      return p?.name ?? "Select project";
                     }}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl">
-                  <SelectItem value="ALL">All Materials (Combined)</SelectItem>
-                  {projectMaterials.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.file_name}
+                <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl font-sans">
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-xs cursor-pointer">
+                      {p.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
 
-            <Button
-              onClick={handleGenerate}
-              disabled={!selectedProject || generating}
-              className="w-full sm:w-auto bg-orange hover:bg-[#D44F19] text-white text-xs font-medium h-10 px-6 shrink-0 rounded-xl shadow-xs transition-colors cursor-pointer"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                  Generating Quiz…
-                </>
-              ) : (
-                <>
-                  <Play className="mr-1.5 h-3.5 w-3.5" />
-                  Start Assessment
-                </>
+              {/* Material Selector - Preserves Material Name strictly */}
+              {projectMaterials.length > 0 && (
+                <Select
+                  value={selectedMaterial}
+                  onValueChange={(v) => setSelectedMaterial(v ?? "ALL")}
+                >
+                  <SelectTrigger className="w-full sm:flex-1 bg-white border border-black/15 text-ink text-xs h-11 rounded-xl px-3 hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
+                    <SelectValue placeholder="All Materials">
+                      {(val: string | null) => {
+                        const cur = val || selectedMaterial;
+                        if (cur === "ALL") return "All Materials (Combined)";
+                        const m = projectMaterials.find((mat) => mat.id === cur);
+                        return m?.file_name ?? "Select material";
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl font-sans">
+                    <SelectItem value="ALL" className="text-xs cursor-pointer">
+                      All Materials (Combined)
+                    </SelectItem>
+                    {projectMaterials.map((m) => (
+                      <SelectItem key={m.id} value={m.id} className="text-xs cursor-pointer">
+                        {m.file_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
-            </Button>
+
+              <Button
+                onClick={handleGenerate}
+                disabled={!selectedProject || generating}
+                className="w-full sm:w-auto bg-orange hover:bg-[#D44F19] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium h-11 px-6 shrink-0 rounded-xl shadow-xs transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5 font-sans"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    Generating Quiz…
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-1.5 h-3.5 w-3.5 fill-current" />
+                    Start Assessment
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -345,30 +349,30 @@ export function QuizContent({
   // ─── View 2: Quiz Complete (Results & Mastery Review) ─────────────────────
   if (quizComplete) {
     return (
-      <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-3xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
+      <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
         <Breadcrumbs items={quizBreadcrumbItems} />
         <div className="pb-6 border-b hairline">
           <div className="flex items-center gap-2 mb-2.5">
             <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
-            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500">
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500 font-sans">
               Evaluation
             </span>
           </div>
-          <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight">
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-ink leading-[1.05] tracking-tight">
             Assessment Results
           </h1>
-          <p className="text-sm text-neutral-600 mt-2 font-sans">
+          <p className="text-sm text-neutral-600 mt-2 font-sans max-w-2xl">
             Review your answers, scoring feedback, and concept mastery updates.
           </p>
         </div>
 
-        <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-8 subtle-shadow text-center space-y-5">
+        <div className="bg-white rounded-2xl border border-black/10 p-8 sm:p-12 subtle-shadow text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
             <Trophy className="h-8 w-8 text-orange" />
           </div>
 
           <div className="space-y-1">
-            <h3 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight font-sans">
+            <h3 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal text-ink tracking-tight">
               {totalScore !== null ? `${totalScore.toFixed(0)}%` : "Complete"}
             </h3>
             <p className="text-xs sm:text-sm text-neutral-500 font-sans">
@@ -396,7 +400,7 @@ export function QuizContent({
               }}
               variant="outline"
               size="sm"
-              className="border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-9 px-4 rounded-xl font-medium shadow-xs cursor-pointer"
+              className="border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-10 px-5 rounded-xl font-medium shadow-xs cursor-pointer font-sans"
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1.5 text-neutral-500" />
               Take Another Quiz
@@ -404,7 +408,7 @@ export function QuizContent({
             <Link href="/growth">
               <Button
                 size="sm"
-                className="bg-ink hover:bg-neutral-800 text-white text-xs h-9 px-4 rounded-xl font-medium shadow-xs transition-colors cursor-pointer"
+                className="bg-ink hover:bg-neutral-800 text-white text-xs h-10 px-5 rounded-xl font-medium shadow-xs transition-colors cursor-pointer font-sans"
               >
                 View Concept Growth &rarr;
               </Button>
@@ -593,7 +597,7 @@ export function QuizContent({
 
   // ─── View 3: Active Question View ─────────────────────────────────────────
   return (
-    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-3xl mx-auto space-y-6 selection:bg-orange/20 selection:text-orange">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-6 selection:bg-orange/20 selection:text-orange">
       <Breadcrumbs items={quizBreadcrumbItems} />
       {/* Step Header & Progress Bar */}
       <div className="space-y-2 pb-4 border-b hairline">
@@ -614,21 +618,21 @@ export function QuizContent({
       </div>
 
       {quizError && (
-        <Alert className="border-rose-200 bg-rose-50 text-rose-800 text-xs py-2.5 rounded-xl">
+        <Alert className="border-rose-200 bg-rose-50 text-rose-800 text-xs py-2.5 rounded-xl font-sans">
           <AlertDescription>{quizError}</AlertDescription>
         </Alert>
       )}
 
       {/* Active Question Card */}
-      <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-8 subtle-shadow space-y-5">
-        <div className="space-y-3">
+      <div className="bg-white rounded-2xl border border-black/10 p-6 sm:p-10 lg:p-12 subtle-shadow space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#F5F3EE] border border-black/5 text-neutral-700 font-medium">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#F5F3EE] border border-black/5 text-neutral-700 font-medium font-sans">
                 {currentQuestion?.type === "mcq" ? "Multiple Choice" : "Open-Ended"}
               </span>
               {currentQuestion?.difficulty && (
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-orange/10 text-orange border border-orange/20 font-medium">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-orange/10 text-orange border border-orange/20 font-medium font-sans">
                   Difficulty: {currentQuestion.difficulty}/5
                 </span>
               )}
@@ -639,7 +643,7 @@ export function QuizContent({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowHint(!showHint)}
-                className="text-xs text-neutral-600 hover:text-ink h-7 px-2.5 rounded-lg cursor-pointer"
+                className="text-xs text-neutral-600 hover:text-ink h-7 px-2.5 rounded-lg cursor-pointer font-sans"
               >
                 <Lightbulb className="h-3.5 w-3.5 mr-1 text-orange" />
                 {showHint ? "Hide Hint" : "Hint"}
@@ -647,12 +651,12 @@ export function QuizContent({
             )}
           </div>
 
-          <h2 className="text-lg sm:text-xl font-bold text-ink leading-snug font-sans">
+          <h2 className="font-serif text-xl sm:text-2xl lg:text-3xl font-normal text-ink leading-snug">
             {currentQuestion?.text}
           </h2>
 
           {showHint && currentQuestion?.hint && (
-            <div className="p-3.5 rounded-xl bg-[#F9F8F5] border border-black/5 text-xs text-neutral-700 flex items-start gap-2">
+            <div className="p-3.5 rounded-xl bg-[#F9F8F5] border border-black/5 text-xs text-neutral-700 flex items-start gap-2 font-sans">
               <Lightbulb className="h-4 w-4 shrink-0 text-orange mt-0.5" />
               <span className="leading-relaxed">{currentQuestion.hint}</span>
             </div>
