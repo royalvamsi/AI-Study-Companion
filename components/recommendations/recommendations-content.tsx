@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import {
   Lightbulb,
   Sparkles,
@@ -15,6 +17,9 @@ import {
   Filter,
   Check,
   RotateCcw,
+  MessageSquare,
+  ArrowRight,
+  Target,
 } from "lucide-react";
 
 interface RecommendationItem {
@@ -26,6 +31,8 @@ interface RecommendationItem {
   action_type: string;
   reasoning: string | null;
   is_dismissed: boolean;
+  status?: "active" | "superseded" | "resolved";
+  updated_at?: string;
   created_at: string;
   projects?: { id: string; name: string } | null;
   concepts?: { id: string; name: string } | null;
@@ -41,7 +48,8 @@ export function RecommendationsContent({
   initialRecommendations,
   projects,
 }: RecommendationsContentProps) {
-  const [recommendations, setRecommendations] = useState<RecommendationItem[]>(initialRecommendations);
+  const [recommendations, setRecommendations] =
+    useState<RecommendationItem[]>(initialRecommendations);
   const [selectedProject, setSelectedProject] = useState<string>("ALL");
   const [selectedPriority, setSelectedPriority] = useState<string>("ALL");
   const [showDismissed, setShowDismissed] = useState<boolean>(false);
@@ -51,22 +59,35 @@ export function RecommendationsContent({
     setUpdatingId(recId);
     const supabase = createClient();
     const nextState = !currentDismissed;
+    const nextStatus = nextState ? ("resolved" as const) : ("active" as const);
+    const now = new Date().toISOString();
 
     // Optimistic UI update
     setRecommendations((prev) =>
-      prev.map((r) => (r.id === recId ? { ...r, is_dismissed: nextState } : r))
+      prev.map((r) =>
+        r.id === recId
+          ? { ...r, is_dismissed: nextState, status: nextStatus, updated_at: now }
+          : r
+      )
     );
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from("recommendations")
-        .update({ is_dismissed: nextState })
+        .update({
+          is_dismissed: nextState,
+          status: nextStatus,
+          updated_at: now,
+        })
         .eq("id", recId);
     } catch (err) {
       console.error("Failed to update recommendation:", err);
       // Revert on error
       setRecommendations((prev) =>
-        prev.map((r) => (r.id === recId ? { ...r, is_dismissed: currentDismissed } : r))
+        prev.map((r) =>
+          r.id === recId ? { ...r, is_dismissed: currentDismissed } : r
+        )
       );
     } finally {
       setUpdatingId(null);
@@ -74,17 +95,22 @@ export function RecommendationsContent({
   }
 
   const filtered = recommendations.filter((r) => {
-    if (!showDismissed && r.is_dismissed) return false;
-    if (showDismissed && !r.is_dismissed) return false;
-    if (selectedProject !== "ALL" && r.project_id !== selectedProject) return false;
-    if (selectedPriority !== "ALL" && r.priority !== selectedPriority) return false;
+    if (!showDismissed) {
+      if (r.is_dismissed || (r.status && r.status !== "active")) return false;
+    } else {
+      if (!r.is_dismissed && r.status !== "resolved") return false;
+    }
+    if (selectedProject !== "ALL" && r.project_id !== selectedProject)
+      return false;
+    if (selectedPriority !== "ALL" && r.priority !== selectedPriority)
+      return false;
     return true;
   });
 
   const priorityColors = {
     HIGH: "bg-rose-500/15 text-rose-300 border-rose-500/30",
     MEDIUM: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    LOW: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+    LOW: "bg-sky-500/15 text-sky-300 border-sky-500/30",
   };
 
   const priorityBadges = {
@@ -94,16 +120,31 @@ export function RecommendationsContent({
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Study Recommendations" },
+        ]}
+      />
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/60">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <Lightbulb className="h-6 w-6 text-amber-400" />
-            Study Recommendations
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Deterministic and AI-driven study tasks based on your quiz performance and concept mastery.
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2.5">
+              Study Recommendations
+            </h1>
+            <Badge
+              variant="outline"
+              className="bg-amber-500/10 text-amber-400 border-amber-500/25 text-xs"
+            >
+              Adaptive Guidance
+            </Badge>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Actionable next steps generated from your concept mastery and quiz evaluations.
           </p>
         </div>
 
@@ -113,8 +154,10 @@ export function RecommendationsContent({
             variant="outline"
             size="sm"
             onClick={() => setShowDismissed(!showDismissed)}
-            className={`border-slate-700 text-xs ${
-              showDismissed ? "bg-slate-800 text-white" : "text-slate-400"
+            className={`border-slate-700 text-xs h-9 ${
+              showDismissed
+                ? "bg-slate-800 text-white"
+                : "bg-slate-900/60 text-slate-400 hover:text-white"
             }`}
           >
             {showDismissed ? (
@@ -125,7 +168,7 @@ export function RecommendationsContent({
             ) : (
               <>
                 <Check className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
-                View Completed/Dismissed
+                View Completed
               </>
             )}
           </Button>
@@ -134,9 +177,9 @@ export function RecommendationsContent({
 
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center gap-3 bg-slate-900/60 border border-slate-800/80 p-3 rounded-xl">
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-400 px-1">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400 px-1">
           <Filter className="h-3.5 w-3.5 text-indigo-400" />
-          Filter by:
+          Filter:
         </div>
 
         {/* Project Selector */}
@@ -166,47 +209,47 @@ export function RecommendationsContent({
         </select>
 
         <div className="ml-auto text-xs text-slate-400">
-          Showing <span className="font-semibold text-white">{filtered.length}</span> item{filtered.length === 1 ? "" : "s"}
+          Showing <span className="font-semibold text-white">{filtered.length}</span>{" "}
+          item{filtered.length === 1 ? "" : "s"}
         </div>
       </div>
 
-      {/* Recommendations List */}
+      {/* Recommendations Cards Grid */}
       {filtered.length === 0 ? (
-        <Card className="border-slate-800/80 bg-slate-900/40 text-center py-16">
-          <CardContent className="space-y-4 max-w-md mx-auto">
-            <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-medium text-white">
-                {showDismissed ? "No completed items" : "No recommendations right now"}
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                {showDismissed
-                  ? "Items you dismiss or complete will appear here for reference."
-                  : "As you take quizzes and study with the AI Tutor, your personalized recommendations will appear here automatically."}
-              </p>
-            </div>
-            {!showDismissed && (
-              <div className="flex justify-center gap-3 pt-2">
-                <Link
-                  href="/quiz"
-                  className="inline-flex items-center justify-center rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white h-8 px-3 transition-colors"
+        <EmptyState
+          icon={Sparkles}
+          title={showDismissed ? "No completed items" : "You're all caught up"}
+          description={
+            showDismissed
+              ? "Items you complete or dismiss will appear here for historical reference."
+              : "As you complete adaptive quizzes and converse with the AI Tutor, personalized recommendations will automatically populate here."
+          }
+          className="my-12 py-16"
+        >
+          {!showDismissed && (
+            <div className="flex justify-center gap-3 pt-4">
+              <Link href="/quiz">
+                <Button
+                  size="sm"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8 px-4"
                 >
                   <ClipboardCheck className="h-3.5 w-3.5 mr-1.5" />
                   Take a Quiz
-                </Link>
-                <Link
-                  href="/tutor"
-                  className="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 hover:text-white h-8 px-3 transition-colors"
+                </Button>
+              </Link>
+              <Link href="/tutor">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-700 bg-slate-800/80 text-slate-200 text-xs h-8 px-4"
                 >
-                  <Brain className="h-3.5 w-3.5 mr-1.5" />
+                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                   Open AI Tutor
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </Button>
+              </Link>
+            </div>
+          )}
+        </EmptyState>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((rec) => {
@@ -216,11 +259,11 @@ export function RecommendationsContent({
             return (
               <Card
                 key={rec.id}
-                className={`border-slate-800/80 bg-slate-900/50 backdrop-blur-sm transition-all hover:border-slate-700/80 ${
+                className={`border-slate-800/80 bg-slate-900/60 backdrop-blur-sm transition-all hover:border-slate-700 ${
                   rec.is_dismissed ? "opacity-60" : ""
-                }`}
+                } flex flex-col justify-between`}
               >
-                <CardHeader className="p-4 pb-2 space-y-2">
+                <CardHeader className="p-5 pb-3 space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge
@@ -231,7 +274,10 @@ export function RecommendationsContent({
                       >
                         {priorityBadges[rec.priority] ?? rec.priority}
                       </Badge>
-                      <Badge variant="outline" className="bg-slate-800/60 text-slate-300 border-slate-700/60 text-[10px]">
+                      <Badge
+                        variant="outline"
+                        className="bg-slate-800/80 text-slate-300 border-slate-700/80 text-[10px]"
+                      >
                         {rec.action_type.replace(/_/g, " ")}
                       </Badge>
                     </div>
@@ -242,7 +288,8 @@ export function RecommendationsContent({
                       onClick={() => toggleDismiss(rec.id, rec.is_dismissed)}
                       disabled={updatingId === rec.id}
                       className="h-7 w-7 p-0 text-slate-400 hover:text-white"
-                      title={rec.is_dismissed ? "Restore" : "Dismiss"}
+                      title={rec.is_dismissed ? "Restore" : "Mark as completed"}
+                      aria-label={rec.is_dismissed ? "Restore" : "Mark as completed"}
                     >
                       {rec.is_dismissed ? (
                         <RotateCcw className="h-3.5 w-3.5" />
@@ -252,37 +299,45 @@ export function RecommendationsContent({
                     </Button>
                   </div>
 
-                  <CardTitle className="text-sm font-semibold text-white leading-snug">
-                    {conceptName ? `Strengthen: ${conceptName}` : `Study: ${projectName}`}
+                  <CardTitle className="text-sm sm:text-base font-semibold text-white leading-snug">
+                    {conceptName ? `Strengthen: ${conceptName}` : `Review: ${projectName}`}
                   </CardTitle>
                 </CardHeader>
 
-                <CardContent className="p-4 pt-2 space-y-3">
+                <CardContent className="p-5 pt-0 space-y-4">
                   {rec.reasoning && (
-                    <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/30 p-2.5 rounded-lg border border-slate-800/60">
+                    <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800/80 text-xs text-slate-300 leading-relaxed">
+                      <span className="font-semibold text-slate-200 block mb-1">
+                        Why this is recommended:
+                      </span>
                       {rec.reasoning}
-                    </p>
+                    </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-800/40 text-xs">
-                    <span className="text-slate-400 truncate max-w-[180px]">
-                      Project: <span className="text-slate-300">{projectName}</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/50 text-xs">
+                    <span className="text-slate-400 truncate max-w-[200px]">
+                      Project: <span className="text-slate-300 font-medium">{projectName}</span>
                     </span>
 
                     <div className="flex items-center gap-2">
-                      <Link
-                        href={`/tutor?project=${rec.project_id}`}
-                        className="inline-flex items-center justify-center rounded-lg bg-indigo-600 hover:bg-indigo-500 text-[11px] font-medium text-white h-7 px-2.5 transition-colors"
-                      >
-                        <Brain className="h-3 w-3 mr-1" />
-                        Study
+                      <Link href={`/tutor?project=${rec.project_id}`}>
+                        <Button
+                          size="sm"
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8 px-3 shadow-sm"
+                        >
+                          <MessageSquare className="h-3 w-3 mr-1.5" />
+                          Study with Tutor
+                        </Button>
                       </Link>
-                      <Link
-                        href={`/quiz?project=${rec.project_id}`}
-                        className="inline-flex items-center justify-center rounded-lg border border-slate-700 hover:bg-slate-800 text-[11px] font-medium text-slate-300 hover:text-white h-7 px-2.5 transition-colors"
-                      >
-                        <ClipboardCheck className="h-3 w-3 mr-1" />
-                        Quiz
+                      <Link href={`/quiz?project=${rec.project_id}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs h-8 px-3"
+                        >
+                          <ClipboardCheck className="h-3 w-3 mr-1.5 text-emerald-400" />
+                          Quiz
+                        </Button>
                       </Link>
                     </div>
                   </div>

@@ -14,6 +14,71 @@ interface MasteryRecord {
   assessment_count: number;
 }
 
+export interface ConceptMasteryDelta {
+  conceptId: string;
+  conceptName?: string;
+  previousScore: number;
+  newScore: number;
+  scoreDelta: number;
+  trend: "IMPROVING" | "NEEDS_ATTENTION" | "STABLE";
+}
+
+/**
+ * Deterministically compute trend:
+ * When assessmentCount === 1:
+ *   score < 40  -> NEEDS_ATTENTION
+ *   score >= 70 -> IMPROVING
+ *   otherwise   -> STABLE
+ * When assessmentCount > 1:
+ *   delta > 5   -> IMPROVING
+ *   delta < -5  -> NEEDS_ATTENTION
+ *   otherwise   -> STABLE
+ */
+export function computeMasteryTrend(
+  assessmentCount: number,
+  score: number,
+  scoreDelta: number
+): "IMPROVING" | "NEEDS_ATTENTION" | "STABLE" {
+  if (assessmentCount === 1) {
+    if (score < 40) return "NEEDS_ATTENTION";
+    if (score >= 70) return "IMPROVING";
+    return "STABLE";
+  }
+  if (scoreDelta > 5) return "IMPROVING";
+  if (scoreDelta < -5) return "NEEDS_ATTENTION";
+  return "STABLE";
+}
+
+export function calculateMasteryUpdate(
+  existing: MasteryRecord | null,
+  recentPerformance: number
+): {
+  newScore: number;
+  previousScore: number;
+  assessmentCount: number;
+  trend: "IMPROVING" | "NEEDS_ATTENTION" | "STABLE";
+  scoreDelta: number;
+} {
+  const previousScore = existing?.mastery_score ?? 0;
+  const assessmentCount = (existing?.assessment_count ?? 0) + 1;
+
+  const historyWeight = existing ? 0.6 : 0;
+  const recentWeight = existing ? 0.4 : 1.0;
+  const newScore = previousScore * historyWeight + recentPerformance * recentWeight;
+  const roundedNewScore = Math.round(newScore * 100) / 100;
+  const scoreDelta = Math.round((roundedNewScore - previousScore) * 100) / 100;
+
+  const trend = computeMasteryTrend(assessmentCount, roundedNewScore, scoreDelta);
+
+  return {
+    newScore: roundedNewScore,
+    previousScore,
+    assessmentCount,
+    trend,
+    scoreDelta,
+  };
+}
+
 /**
  * Update concept mastery after a completed assessment.
  *
@@ -24,7 +89,7 @@ export async function updateMasteryAfterAssessment(
   assessment: AssessmentWithQuestions,
   userId: string,
   projectId: string
-): Promise<void> {
+): Promise<ConceptMasteryDelta[]> {
   const supabase = createAdminClient();
 
   const byConceptId = new Map<string, Array<{ is_correct: boolean | null; score: number | null }>>();
@@ -35,6 +100,8 @@ export async function updateMasteryAfterAssessment(
     existing.push({ is_correct: q.is_correct, score: q.score });
     byConceptId.set(q.concept_id, existing);
   }
+
+  const deltas: ConceptMasteryDelta[] = [];
 
   for (const [conceptId, questions] of byConceptId.entries()) {
     const answered = questions.filter((q) => q.is_correct !== null);
@@ -54,23 +121,15 @@ export async function updateMasteryAfterAssessment(
       .eq("concept_id", conceptId)
       .maybeSingle();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existing = existingData as MasteryRecord | null;
+    const update = calculateMasteryUpdate(existing, recentPerformance);
 
-    const previousScore = existing?.mastery_score ?? 0;
-    const assessmentCount = (existing?.assessment_count ?? 0) + 1;
-
-    const historyWeight = existing ? 0.6 : 0;
-    const recentWeight = existing ? 0.4 : 1.0;
-    const newScore = previousScore * historyWeight + recentPerformance * recentWeight;
-
-    const scoreDelta = newScore - previousScore;
-    const trend =
-      scoreDelta > 5
-        ? "IMPROVING" as const
-        : scoreDelta < -5
-        ? "NEEDS_ATTENTION" as const
-        : "STABLE" as const;
+    // Fetch concept name for reporting
+    const { data: conceptData } = await supabase
+      .from("concepts")
+      .select("name")
+      .eq("id", conceptId)
+      .maybeSingle();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from("concept_mastery") as any).upsert(
@@ -79,17 +138,28 @@ export async function updateMasteryAfterAssessment(
           project_id: projectId,
           user_id: userId,
           concept_id: conceptId,
-          mastery_score: Math.round(newScore * 100) / 100,
-          previous_score: previousScore,
-          trend,
-          assessment_count: assessmentCount,
+          mastery_score: update.newScore,
+          previous_score: update.previousScore,
+          trend: update.trend,
+          assessment_count: update.assessmentCount,
           last_assessed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
       ],
       { onConflict: "project_id,user_id,concept_id" }
     );
+
+    deltas.push({
+      conceptId,
+      conceptName: (conceptData as { name?: string } | null)?.name ?? undefined,
+      previousScore: update.previousScore,
+      newScore: update.newScore,
+      scoreDelta: update.scoreDelta,
+      trend: update.trend,
+    });
   }
+
+  return deltas;
 }
 
 /**

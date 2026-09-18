@@ -26,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="h-full bg-background font-sans antialiased">
+    <html lang="en" className={`${inter.variable} dark h-full`}>
+      <body className="h-full bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
         <TooltipProvider>
           {children}
           <Toaster />

@@ -8,6 +8,7 @@ export const onQuizCompleted = inngest.createFunction(
     id: "quiz-completed",
     name: "Quiz Completed: Update Mastery & Detect Mistakes",
     retries: 3,
+    idempotency: "event.data.assessmentId",
     triggers: [{ event: "quiz/completed" }],
   },
   async ({ event, step }: { event: { data: { assessmentId: string; projectId: string; userId: string } }; step: { run: <T>(name: string, fn: () => Promise<T>) => Promise<T>; sendEvent: (id: string, event: { name: string; data: Record<string, unknown> }) => Promise<void> } }) => {
@@ -27,9 +28,27 @@ export const onQuizCompleted = inngest.createFunction(
       return data;
     });
 
+    // Defensive check: short-circuit if already processed
+    if (assessment.mastery_processed_at) {
+      console.warn(
+        `[quizCompleted] Skipping duplicate run for assessment ${assessmentId}; mastery was already processed at ${assessment.mastery_processed_at}`
+      );
+      return {
+        assessmentId,
+        skipped: true,
+        reason: `Assessment mastery already processed at ${assessment.mastery_processed_at}`,
+      };
+    }
+
     // ── Step 2: Update mastery ────────────────────────────────────────────────
     await step.run("update-mastery", async () => {
       await updateMasteryAfterAssessment(assessment as Parameters<typeof updateMasteryAfterAssessment>[0], userId, projectId);
+
+      const now = new Date().toISOString();
+      await supabase
+        .from("assessments")
+        .update({ mastery_processed_at: now })
+        .eq("id", assessmentId);
 
       await emitActivityEvent({
         projectId,

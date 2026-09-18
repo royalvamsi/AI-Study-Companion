@@ -55,23 +55,44 @@ export const onRepeatedMistake = inngest.createFunction(
 
     // ── Step 2: Create high-priority targeted recommendation ──────────────────
     await step.run("create-targeted-recommendation", async () => {
-      await supabase
+      const { data: existing } = await supabase
         .from("recommendations")
-        .delete()
+        .select("id, priority, action_type, reasoning")
         .eq("project_id", projectId)
         .eq("user_id", userId)
         .eq("concept_id", conceptId)
-        .eq("is_dismissed", false);
+        .eq("status", "active")
+        .eq("is_dismissed", false)
+        .maybeSingle();
 
-      await supabase.from("recommendations").insert({
-        project_id: projectId,
-        user_id: userId,
-        concept_id: conceptId,
-        priority: "HIGH",
-        action_type: "REVIEW",
-        reasoning: `You've made mistakes on this concept ${mistakeCount} times. A focused review session is strongly recommended before attempting more questions.`,
-        is_dismissed: false,
-      });
+      const reasoning = `You've made mistakes on this concept ${mistakeCount} times. A focused review session is strongly recommended before attempting more questions.`;
+      const now = new Date().toISOString();
+
+      if (existing) {
+        if (existing.priority !== "HIGH" || existing.action_type !== "REVIEW" || existing.reasoning !== reasoning) {
+          await supabase
+            .from("recommendations")
+            .update({
+              priority: "HIGH",
+              action_type: "REVIEW",
+              reasoning,
+              updated_at: now,
+            })
+            .eq("id", existing.id);
+        }
+      } else {
+        await supabase.from("recommendations").insert({
+          project_id: projectId,
+          user_id: userId,
+          concept_id: conceptId,
+          priority: "HIGH",
+          action_type: "REVIEW",
+          reasoning,
+          is_dismissed: false,
+          status: "active",
+          updated_at: now,
+        });
+      }
     });
 
     return { conceptId, mistakeCount };

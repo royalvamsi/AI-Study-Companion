@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { RecommendationsContent } from "@/components/recommendations/recommendations-content";
-import { buildRecommendations } from "@/lib/learning/recommendations";
+import { buildRecommendations, syncRecommendations } from "@/lib/learning/recommendations";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -40,6 +40,8 @@ export default async function RecommendationsPage() {
       action_type,
       reasoning,
       is_dismissed,
+      status,
+      updated_at,
       created_at,
       projects (id, name),
       concepts (id, name)
@@ -56,7 +58,7 @@ export default async function RecommendationsPage() {
     for (const p of projectList) {
       const recs = await buildRecommendations(p.id, user.id);
       if (recs.length > 0) {
-        await (supabase.from("recommendations") as any).insert(recs);
+        await syncRecommendations(p.id, user.id, recs, { emitEvents: true });
       }
     }
 
@@ -72,6 +74,8 @@ export default async function RecommendationsPage() {
         action_type,
         reasoning,
         is_dismissed,
+        status,
+        updated_at,
         created_at,
         projects (id, name),
         concepts (id, name)

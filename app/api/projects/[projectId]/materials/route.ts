@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { inngest } from "@/inngest/client";
+import { emitActivityEvent, ActivityEventType } from "@/lib/activity/events";
 
 /**
  * POST /api/projects/[projectId]/materials
@@ -43,19 +44,51 @@ export async function POST(
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file type
-    if (file.type !== "application/pdf") {
+    // Validate file type (PDF, text, markdown)
+    const lowerName = file.name.toLowerCase();
+    let resolvedFileType: string | null = null;
+
+    if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) {
+      resolvedFileType = "application/pdf";
+    } else if (
+      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      file.type === "application/docx" ||
+      lowerName.endsWith(".docx")
+    ) {
+      resolvedFileType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    } else if (
+      file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+      file.type === "application/vnd.ms-powerpoint" ||
+      file.type === "application/pptx" ||
+      lowerName.endsWith(".pptx")
+    ) {
+      resolvedFileType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    } else if (
+      file.type === "text/markdown" ||
+      file.type === "text/x-markdown" ||
+      lowerName.endsWith(".md") ||
+      lowerName.endsWith(".markdown")
+    ) {
+      resolvedFileType = "text/markdown";
+    } else if (
+      file.type === "text/plain" ||
+      lowerName.endsWith(".txt")
+    ) {
+      resolvedFileType = "text/plain";
+    }
+
+    if (!resolvedFileType) {
       return NextResponse.json(
-        { error: "Only PDF files are supported" },
+        { error: "Only PDF (.pdf), Word (.docx), PowerPoint (.pptx), Markdown (.md), and plain text (.txt) files are supported" },
         { status: 400 }
       );
     }
 
-    // Validate file size (10MB max)
-    const MAX_SIZE = 10 * 1024 * 1024;
+    // Validate file size (50MB max)
+    const MAX_SIZE = 50 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 10MB." },
+        { error: "File too large. Maximum size is 50MB." },
         { status: 400 }
       );
     }
@@ -69,7 +102,7 @@ export async function POST(
     const { error: uploadError } = await supabase.storage
       .from("materials")
       .upload(filePath, fileBuffer, {
-        contentType: "application/pdf",
+        contentType: resolvedFileType,
         upsert: false,
       });
 
@@ -80,7 +113,7 @@ export async function POST(
       );
     }
 
-    // Create materials row
+    // Create materials row with actual file_type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: material, error: insertError } = await (supabase.from("materials") as any)
       .insert({
@@ -89,7 +122,7 @@ export async function POST(
         user_id: user.id,
         file_name: file.name,
         file_path: filePath,
-        file_type: "application/pdf",
+        file_type: resolvedFileType,
         status: "queued",
       })
       .select()
@@ -105,6 +138,7 @@ export async function POST(
     }
 
     // Fire Inngest event to start processing
+    let finalMaterial = material;
     try {
       await inngest.send({
         name: "material/uploaded",
@@ -114,14 +148,48 @@ export async function POST(
           userId: user.id,
           filePath,
           fileName: file.name,
+          fileType: resolvedFileType,
         },
       });
     } catch (inngestError) {
       console.error("Failed to emit Inngest event:", inngestError);
-      // The file was stored and material record created; do not fail the upload request
+      const failureReason = "Failed to start processing. Please try uploading again.";
+
+      // Mark materials row as failed rather than leaving it stuck in queued
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: updatedMaterial, error: updateError } = await (supabase.from("materials") as any)
+        .update({
+          status: "failed",
+          error_message: failureReason,
+        })
+        .eq("id", materialId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Failed to update material to failed status after Inngest error:", updateError);
+        finalMaterial = {
+          ...material,
+          status: "failed",
+          error_message: failureReason,
+        };
+      } else if (updatedMaterial) {
+        finalMaterial = updatedMaterial;
+      }
+
+      await emitActivityEvent({
+        projectId,
+        userId: user.id,
+        eventType: ActivityEventType.MATERIAL_FAILED,
+        payload: {
+          materialId,
+          fileName: file.name,
+          error: failureReason,
+        },
+      });
     }
 
-    return NextResponse.json({ material }, { status: 201 });
+    return NextResponse.json({ material: finalMaterial }, { status: 201 });
   } catch (error) {
     console.error("Material upload error:", error);
     const message =

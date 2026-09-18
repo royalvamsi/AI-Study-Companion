@@ -21,7 +21,7 @@ export default async function AppLayout({
     .single();
 
   return (
-    <div className="flex h-screen bg-slate-950">
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-slate-950">
       <AppSidebar
         user={{
           id: user.id,
@@ -31,7 +31,7 @@ export default async function AppLayout({
           isAdmin: profile?.is_admin ?? false,
         }}
       />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto min-w-0 bg-slate-950">{children}</main>
     </div>
   );
 }

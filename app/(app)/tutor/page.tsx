@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { TutorChat } from "@/components/tutor/tutor-chat";
+import {
+  getPersistentLearningContext,
+  generateTutorOpeningMessage,
+} from "@/lib/learning/learning-context";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -25,7 +29,7 @@ export default async function TutorPage({
   // Fetch user's projects for project selector
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: projectsRaw } = await (supabase.from("projects") as any)
-    .select("id, name, space_id")
+    .select("id, name, space_id, materials(id, status, file_name)")
     .eq("user_id", user.id)
     .order("name");
 
@@ -35,7 +39,7 @@ export default async function TutorPage({
   if (projectId && !projects.some((p) => p.id === projectId)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: currentProject } = await (supabase.from("projects") as any)
-      .select("id, name, space_id")
+      .select("id, name, space_id, materials(id, status, file_name)")
       .eq("id", projectId)
       .maybeSingle();
     if (currentProject) {
@@ -82,12 +86,20 @@ export default async function TutorPage({
     messages = data ?? [];
   }
 
+  // Section 1: Tutor opens with context, not a blank box
+  let initialOpeningGreeting: string | null = null;
+  if (projectId && messages.length === 0) {
+    const learningContext = await getPersistentLearningContext(user.id, projectId);
+    initialOpeningGreeting = await generateTutorOpeningMessage(user.id, projectId, learningContext);
+  }
+
   return (
     <TutorChat
       projects={projects ?? []}
       activeProjectId={projectId ?? null}
       conversationId={conversationId}
       initialMessages={messages}
+      initialOpeningGreeting={initialOpeningGreeting}
       userId={user.id}
     />
   );

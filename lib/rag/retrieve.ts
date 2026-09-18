@@ -93,10 +93,10 @@ export function buildTutorSystemPrompt({
   masteryContext,
 }: TutorPromptOptions): string {
   const contextStr = retrievedChunks
-    .map(
-      (c, idx) =>
-        `[Source ${idx + 1}] (Page ${c.pageNumber ?? "Unknown"}):\n${c.content}`
-    )
+    .map((c, idx) => {
+      const pageTag = c.pageNumber != null ? ` (Page ${c.pageNumber})` : "";
+      return `[Source ${idx + 1}]${pageTag}:\n${c.content}`;
+    })
     .join("\n\n");
 
   return `You are an AI Study Tutor for an adaptive educational platform.
@@ -116,7 +116,7 @@ GROUNDING & INTEGRITY RULES:
 3. NO FALSE LACK OF ACCESS: NEVER claim "I do not have direct access to the PDF", "I cannot view files", or "I lack access to the document". You have the extracted study material chunks in your context above. Refer to them as "your study materials" or "the provided document".
 4. PARTIAL SUPPORT: If the evidence state is PARTIALLY_SUPPORTED, address ONLY the parts of the question that are directly supported by the study material. For any parts not covered in the material, clearly and explicitly state that the study material does not contain that information. Do NOT attempt to fill in the missing information using general or world knowledge.
 5. SYNTHESIS & SUMMARIES: If the student asks for a summary or main concepts of the material (e.g. "What are the main concepts discussed in this PDF?"), synthesize the key topics directly from the provided study material chunks and cite the relevant pages/sources.
-6. CITATIONS: Reference specific pages or sources when answering using [Source N] or (Page X) notation based on the context.
+6. CITATIONS: Reference specific pages or sources when answering using [Source N] or (Page X) notation based on the context. If the source material does not have page numbers (e.g. text or markdown files), cite the source filename or [Source N] directly without inventing page numbers.
 7. PEDAGOGY: Be encouraging, clear, and educational. Break down complex ideas step by step using the material provided. Keep responses focused and educational.`;
 }
 

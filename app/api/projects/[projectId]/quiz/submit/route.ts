@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { gradeOpenEndedAnswer } from "@/lib/ai/grading";
 import { inngest } from "@/inngest/client";
+import { updateMasteryAfterAssessment, ConceptMasteryDelta } from "@/lib/learning/mastery";
+import { refreshAndGetTopRecommendation } from "@/lib/learning/recommendations";
 
 /**
  * POST /api/projects/[projectId]/quiz/submit
@@ -121,6 +123,8 @@ export async function POST(
     const totalQuestions = allQuestions?.length ?? 0;
     const isComplete = totalQuestions > 0 && answeredCount === totalQuestions;
     let finalAverageScore: number | null = null;
+    let masteryDeltas: ConceptMasteryDelta[] = [];
+    let newRecommendation: unknown = null;
 
     if (isComplete) {
       const totalScore = (allQuestions ?? []).reduce(
@@ -138,7 +142,24 @@ export async function POST(
         })
         .eq("id", assessmentId);
 
-      // Trigger background workflow for mastery update and mistake tracking
+      // ── Section 4: Visible Loop Closure - compute deltas and recommendation ──
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: fullAssessment } = await (supabase.from("assessments") as any)
+        .select(`*, assessment_questions (*)`)
+        .eq("id", assessmentId)
+        .single();
+
+      if (fullAssessment) {
+        masteryDeltas = await updateMasteryAfterAssessment(
+          fullAssessment,
+          user.id,
+          projectId
+        );
+      }
+
+      newRecommendation = await refreshAndGetTopRecommendation(projectId, user.id);
+
+      // Trigger background workflow for any async mistake events
       try {
         await inngest.send({
           name: "quiz/completed",
@@ -163,6 +184,8 @@ export async function POST(
       totalScore: finalAverageScore,
       correctAnswer: question.correct_answer,
       rubric: rubricDetails,
+      masteryDeltas,
+      newRecommendation,
     });
   } catch (error) {
     console.error("Quiz submit error:", error);

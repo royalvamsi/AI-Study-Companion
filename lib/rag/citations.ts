@@ -6,6 +6,7 @@ export interface Citation {
   fileName: string;
   pageNumber: number | null;
   excerpt: string;
+  fileType?: string | null;
 }
 
 /**
@@ -22,14 +23,16 @@ export async function buildCitations(
 
   const { data: materialsRaw } = await supabase
     .from("materials")
-    .select("id, file_name")
+    .select("id, file_name, file_type")
     .in("id", materialIds);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const materials = materialsRaw as Array<{ id: string; file_name: string }> | null;
+  const materials = materialsRaw as Array<{ id: string; file_name: string; file_type?: string | null }> | null;
   if (!materials) return [];
 
-  const materialMap = new Map(materials.map((m) => [m.id, m.file_name]));
+  const materialMap = new Map(
+    materials.map((m) => [m.id, { fileName: m.file_name, fileType: m.file_type }])
+  );
 
   // Group by material, pick the top chunk per material
   const byMaterial = new Map<string, RetrievedChunk>();
@@ -40,10 +43,14 @@ export async function buildCitations(
     }
   }
 
-  return [...byMaterial.entries()].map(([materialId, chunk]) => ({
-    materialId,
-    fileName: materialMap.get(materialId) ?? "Unknown file",
-    pageNumber: chunk.pageNumber,
-    excerpt: chunk.content.slice(0, 200).trim() + "…",
-  }));
+  return [...byMaterial.entries()].map(([materialId, chunk]) => {
+    const meta = materialMap.get(materialId);
+    return {
+      materialId,
+      fileName: meta?.fileName ?? "Unknown file",
+      fileType: meta?.fileType ?? null,
+      pageNumber: chunk.pageNumber,
+      excerpt: chunk.content.slice(0, 200).trim() + "…",
+    };
+  });
 }

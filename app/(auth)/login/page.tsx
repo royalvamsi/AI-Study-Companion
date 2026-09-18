@@ -1,50 +1,47 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
-import { Brain } from "lucide-react";
+import { Brain, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Sign in to your AI Study Companion account",
+  description: "Sign in to your AI Study Companion workspace.",
 };
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 flex items-center justify-center p-4">
-      {/* Background glow effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
-            <Brain className="h-6 w-6 text-indigo-400" />
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-6">
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center space-y-2">
+          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400 shadow-sm">
+            <Brain className="h-6 w-6" />
           </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">
               AI Study Companion
             </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Your adaptive learning partner
+            <p className="text-xs text-slate-400 mt-0.5 flex items-center justify-center gap-1">
+              <Sparkles className="h-3 w-3 text-indigo-400" />
+              Intelligent Workspace for Learning
             </p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800/60 rounded-2xl p-8 shadow-2xl">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-white">Welcome back</h2>
-            <p className="text-slate-400 text-sm mt-1">
-              Sign in to continue your learning journey
+        <div className="bg-slate-900/70 border border-slate-800/80 rounded-xl p-6 sm:p-8 shadow-md space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold text-white tracking-tight">
+              Sign In
+            </h2>
+            <p className="text-xs text-slate-400">
+              Access your spaces, study documents, and adaptive quizzes.
             </p>
           </div>
 
           <LoginForm />
 
-          <p className="text-center text-sm text-slate-500 mt-6">
+          <p className="text-center text-xs text-slate-400 pt-2 border-t border-slate-800/60">
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"

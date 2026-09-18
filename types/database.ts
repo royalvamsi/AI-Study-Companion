@@ -320,6 +320,7 @@ export interface Database {
           score: number | null;
           started_at: string;
           completed_at: string | null;
+          mastery_processed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -330,12 +331,14 @@ export interface Database {
           score?: number | null;
           started_at?: string;
           completed_at?: string | null;
+          mastery_processed_at?: string | null;
         };
         Update: {
           status?: "in_progress" | "completed" | "abandoned";
           question_count?: number;
           score?: number | null;
           completed_at?: string | null;
+          mastery_processed_at?: string | null;
         };
       };
       assessment_questions: {
@@ -389,6 +392,8 @@ export interface Database {
           action_type: string;
           reasoning: string | null;
           is_dismissed: boolean;
+          status: "active" | "superseded" | "resolved";
+          updated_at: string;
           created_at: string;
         };
         Insert: {
@@ -400,10 +405,17 @@ export interface Database {
           action_type: string;
           reasoning?: string | null;
           is_dismissed?: boolean;
+          status?: "active" | "superseded" | "resolved";
+          updated_at?: string;
           created_at?: string;
         };
         Update: {
+          priority?: "HIGH" | "MEDIUM" | "LOW";
+          action_type?: string;
+          reasoning?: string | null;
           is_dismissed?: boolean;
+          status?: "active" | "superseded" | "resolved";
+          updated_at?: string;
         };
       };
       activity_events: {
