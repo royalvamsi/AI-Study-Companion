@@ -1,0 +1,7 @@
+Machine Learning is a subset of Artificial Intelligence.
+Supervised learning uses labeled data to train models.
+Classification predicts discrete categories or classes, such as detecting whether an email is spam or not spam.
+Regression predicts continuous values, such as predicting house prices or temperature.
+Unsupervised learning finds hidden patterns or intrinsic structures in unlabeled input data.
+Clustering groups similar data points together without predefined labels.
+Reinforcement learning trains an agent to make a sequence of decisions by interacting with an environment to maximize cumulative reward.

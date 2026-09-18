@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
+    middlewareClientMaxBodySize: "50mb",
     serverActions: {
       bodySizeLimit: "10mb", // Allow large PDF uploads via server actions
     },
