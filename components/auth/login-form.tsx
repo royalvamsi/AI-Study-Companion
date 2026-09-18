@@ -65,7 +65,9 @@ export function LoginForm() {
           <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
           <Input
             id="email"
+            name="email"
             type="email"
+            autoComplete="email"
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -87,7 +89,9 @@ export function LoginForm() {
           <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
           <Input
             id="password"
+            name="password"
             type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

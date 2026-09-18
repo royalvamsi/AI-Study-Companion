@@ -4,8 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import {
@@ -27,8 +25,6 @@ import {
   Sparkles,
   ClipboardCheck,
   BookOpen,
-  ArrowRight,
-  RefreshCw,
 } from "lucide-react";
 import { TutorMarkdown } from "./tutor-markdown";
 
@@ -70,17 +66,17 @@ const evidenceConfig: Record<
 > = {
   SUPPORTED: {
     icon: CheckCircle,
-    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+    color: "text-emerald-800 bg-emerald-50 border-emerald-200",
     label: "Grounded in Material",
   },
   PARTIALLY_SUPPORTED: {
     icon: AlertTriangle,
-    color: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+    color: "text-amber-800 bg-amber-50 border-amber-200",
     label: "Partially Supported",
   },
   INSUFFICIENT_EVIDENCE: {
     icon: HelpCircle,
-    color: "text-rose-400 bg-rose-500/10 border-rose-500/30",
+    color: "text-rose-800 bg-rose-50 border-rose-200",
     label: "Insufficient Evidence",
   },
 };
@@ -275,12 +271,14 @@ export function TutorChat({
   const handleSend = () => sendMessage(input);
 
   return (
-    <div className="flex flex-col h-full bg-slate-950">
+    <div className="flex flex-col h-full bg-[#F5F3EE] text-ink font-sans">
       {/* Tutor Workspace Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b hairline bg-[#F5F3EE] shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400 shrink-0">
-            <Brain className="h-4 w-4" />
+          <div className="w-8 h-8 rounded-[10px] bg-ink flex items-center justify-center shrink-0">
+            <div className="w-3.5 h-3.5 rounded-full border border-orange relative">
+              <span className="absolute w-1 h-1 bg-orange rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
           </div>
           <div>
             <Breadcrumbs
@@ -299,17 +297,14 @@ export function TutorChat({
               className="mb-1"
             />
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight">
+              <h1 className="text-base sm:text-lg font-bold text-ink tracking-tight font-sans">
                 AI Study Tutor
               </h1>
-              <Badge
-                variant="outline"
-                className="bg-indigo-500/10 text-indigo-300 border-indigo-500/25 text-[10px] hidden sm:inline-flex"
-              >
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-black/10 text-neutral-600 font-medium hidden sm:inline-flex">
                 Document-Grounded
-              </Badge>
+              </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-neutral-500">
               {activeProject
                 ? readyDocsCount > 0
                   ? `${readyDocsCount} document${readyDocsCount > 1 ? "s" : ""} indexed & cited`
@@ -327,7 +322,7 @@ export function TutorChat({
               if (v) router.push(`/tutor?project=${v}`);
             }}
           >
-            <SelectTrigger className="w-52 sm:w-64 bg-slate-800/60 border-slate-700 text-slate-200 text-xs h-9">
+            <SelectTrigger className="w-52 sm:w-64 bg-white border-black/10 text-neutral-800 text-xs h-9 px-3 rounded-xl shadow-xs cursor-pointer">
               <SelectValue placeholder="Select study project">
                 {(val: string | null) => {
                   const targetId = val || activeProjectId;
@@ -337,7 +332,7 @@ export function TutorChat({
                 }}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+            <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl">
               {projects.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.name}
@@ -349,53 +344,51 @@ export function TutorChat({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {!activeProjectId ? (
           <div className="flex items-center justify-center h-full">
-            <Card className="border-slate-800/80 bg-slate-900/50 backdrop-blur-sm max-w-md text-center p-6">
-              <CardContent className="space-y-3 p-0">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
-                  <Brain className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-semibold text-white">
-                  Select a Study Project
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Choose an active study project from the selector above. The AI Tutor will retrieve and cite exact excerpts from that project&apos;s materials.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-[24px] border border-black/10 p-8 max-w-md text-center subtle-shadow space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
+                <Brain className="h-6 w-6 text-ink" />
+              </div>
+              <h3 className="display text-2xl font-bold text-ink">
+                Select a Study Project
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed font-sans">
+                Choose an active study project from the selector above. The AI Tutor will retrieve and cite exact excerpts from that project&apos;s materials.
+              </p>
+            </div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[70%] max-w-xl mx-auto text-center space-y-5 py-8">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400 flex items-center justify-center shadow-sm">
-              <Sparkles className="h-6 w-6" />
+          <div className="flex flex-col items-center justify-center min-h-[70%] max-w-xl mx-auto text-center space-y-6 py-8">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-black/10 text-ink flex items-center justify-center shadow-xs">
+              <Sparkles className="h-6 w-6 text-orange" />
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-lg font-semibold text-white tracking-tight">
-                {activeProject?.name} Tutor Workspace
+              <h3 className="display text-2xl sm:text-3xl font-bold text-ink tracking-tight">
+                {activeProject?.name} Workspace
               </h3>
-              <p className="text-xs text-slate-400 max-w-md leading-relaxed">
-                Ask any question about this project&apos;s materials. The AI will strictly cite evidence from your uploaded documents and notify you if evidence is insufficient.
+              <p className="text-xs text-neutral-500 max-w-md leading-relaxed font-sans">
+                Ask any question about this project&apos;s materials. The AI strictly cites evidence from your uploaded documents and notifies you if evidence is insufficient.
               </p>
             </div>
 
             {/* Suggested Prompts Grid */}
-            <div className="w-full space-y-2 pt-2 text-left">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-center">
+            <div className="w-full space-y-2.5 pt-2 text-left">
+              <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider text-center">
                 Suggested study questions
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {STARTER_PROMPTS.map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => sendMessage(prompt)}
                     disabled={isStreaming}
-                    className="p-3 rounded-xl border border-slate-800/90 bg-slate-900/60 hover:bg-slate-800/80 hover:border-indigo-500/40 text-left text-xs text-slate-300 transition-colors flex items-start gap-2 group"
+                    className="p-3.5 rounded-xl border border-black/10 bg-white hover:bg-neutral-50 text-left text-xs text-neutral-700 hover:text-ink transition-all flex items-start gap-2.5 group subtle-shadow cursor-pointer"
                   >
-                    <BookOpen className="h-3.5 w-3.5 text-indigo-400 shrink-0 mt-0.5" />
-                    <span className="group-hover:text-white transition-colors">{prompt}</span>
+                    <BookOpen className="h-4 w-4 text-orange shrink-0 mt-0.5" />
+                    <span className="leading-relaxed font-sans">{prompt}</span>
                   </button>
                 ))}
               </div>
@@ -409,13 +402,13 @@ export function TutorChat({
             return (
               <div
                 key={i}
-                className={`flex gap-3 max-w-4xl mx-auto ${
+                className={`flex gap-3.5 max-w-4xl mx-auto ${
                   isUser ? "justify-end" : "justify-start"
                 }`}
               >
                 {!isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center shrink-0 mt-0.5 text-indigo-400">
-                    <Brain className="h-4 w-4" />
+                  <div className="w-8 h-8 rounded-xl bg-white border border-black/10 flex items-center justify-center shrink-0 mt-0.5 text-ink shadow-xs">
+                    <Brain className="h-4 w-4 text-neutral-700" />
                   </div>
                 )}
 
@@ -425,20 +418,20 @@ export function TutorChat({
                   }`}
                 >
                   <div
-                    className={`rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed ${
+                    className={`rounded-2xl px-5 py-3.5 text-xs sm:text-sm leading-relaxed ${
                       isUser
-                        ? "bg-indigo-600 text-white rounded-br-sm shadow-sm"
-                        : "bg-slate-900/90 text-slate-200 rounded-bl-sm border border-slate-800/80 shadow-sm"
+                        ? "bg-ink text-white rounded-br-sm shadow-xs"
+                        : "bg-white text-ink rounded-bl-sm border border-black/10 subtle-shadow"
                     }`}
                   >
                     {isUser ? (
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      <div className="whitespace-pre-wrap font-sans leading-relaxed">{msg.content}</div>
                     ) : (
                       <>
                         {msg.content ? (
                           <TutorMarkdown content={msg.content} />
                         ) : isStreaming && i === messages.length - 1 ? (
-                          <div className="flex items-center gap-2 text-indigo-300 text-xs py-1">
+                          <div className="flex items-center gap-2 text-orange text-xs py-1 font-medium">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             <span>Synthesizing grounded evidence…</span>
                           </div>
@@ -449,13 +442,13 @@ export function TutorChat({
 
                   {/* Insufficient Evidence Notice */}
                   {!isUser && isInsufficient && (
-                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-200 flex items-start gap-2.5">
-                      <HelpCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5">
+                      <HelpCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-semibold text-rose-300">
+                        <p className="font-semibold text-rose-900">
                           Insufficient Evidence in Uploaded Material
                         </p>
-                        <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                        <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed font-sans">
                           This information is not available in your study material. To ensure strict academic integrity, general unverified knowledge is not substituted.
                         </p>
                       </div>
@@ -471,13 +464,12 @@ export function TutorChat({
                           evidenceConfig.SUPPORTED;
                         const Icon = cfg.icon;
                         return (
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] font-medium ${cfg.color} border py-0.5`}
+                          <span
+                            className={`inline-flex items-center text-[10px] font-medium ${cfg.color} border px-2.5 py-0.5 rounded-full`}
                           >
                             <Icon className="h-3 w-3 mr-1" />
                             {cfg.label}
-                          </Badge>
+                          </span>
                         );
                       })()}
                     </div>
@@ -486,7 +478,7 @@ export function TutorChat({
                   {/* Academic Citations Badges */}
                   {!isUser && msg.citations && msg.citations.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mr-1">
+                      <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider mr-1">
                         Sources:
                       </span>
                       {msg.citations.map((c, ci) => {
@@ -509,34 +501,33 @@ export function TutorChat({
                         }
 
                         return (
-                          <Badge
+                          <span
                             key={ci}
-                            variant="outline"
-                            className="bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700/80 text-[10px] py-0.5"
+                            className="inline-flex items-center text-[10px] py-0.5 px-2 rounded-md bg-white border border-black/10 text-neutral-700 shadow-xs"
                             title={c.excerpt ? `Excerpt: "${c.excerpt.slice(0, 100)}..."` : undefined}
                           >
-                            <FileText className="h-2.5 w-2.5 mr-1 text-indigo-400" />
-                            <span className="font-semibold text-slate-200 mr-1">
+                            <FileText className="h-2.5 w-2.5 mr-1 text-neutral-400" />
+                            <span className="font-semibold text-ink mr-1">
                               {pageOrSourceTag}
                             </span>
-                            <span className="text-slate-300 font-medium truncate max-w-[160px]">
+                            <span className="text-neutral-600 font-medium truncate max-w-[160px]">
                               {c.fileName}
                             </span>
-                          </Badge>
+                          </span>
                         );
                       })}
                     </div>
                   )}
 
-                  {/* Phase 19: High-Value CTA: Practice this concept in Quiz */}
+                  {/* Practice in Quiz Link */}
                   {!isUser && msg.content && activeProjectId && (
-                    <div className="pt-1.5 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="pt-1.5 flex items-center justify-between text-[11px] text-neutral-500 font-sans">
                       <span>Understood this explanation?</span>
                       <Link
                         href={`/quiz?project=${activeProjectId}`}
-                        className="text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1 transition-colors"
+                        className="text-orange hover:underline font-medium inline-flex items-center gap-1 transition-colors"
                       >
-                        <ClipboardCheck className="h-3 w-3 text-emerald-400" />
+                        <ClipboardCheck className="h-3 w-3 text-emerald-600" />
                         Practice in Quiz &rarr;
                       </Link>
                     </div>
@@ -544,7 +535,7 @@ export function TutorChat({
                 </div>
 
                 {isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 mt-0.5 text-slate-300">
+                  <div className="w-8 h-8 rounded-xl bg-white border border-black/10 flex items-center justify-center shrink-0 mt-0.5 text-neutral-700 shadow-xs">
                     <User className="h-4 w-4" />
                   </div>
                 )}
@@ -557,7 +548,7 @@ export function TutorChat({
 
       {/* Input Area */}
       {activeProjectId && (
-        <div className="p-3 sm:p-4 border-t border-slate-800/80 bg-slate-900/60 backdrop-blur-md shrink-0">
+        <div className="p-4 sm:p-5 border-t hairline bg-[#F5F3EE] shrink-0">
           <div className="flex items-end gap-2.5 max-w-4xl mx-auto">
             <Textarea
               value={input}
@@ -570,13 +561,13 @@ export function TutorChat({
               }}
               placeholder="Ask a question grounded in your study documents… (Enter to send, Shift+Enter for newline)"
               rows={1}
-              className="bg-slate-800/60 border-slate-700 text-white text-xs sm:text-sm placeholder:text-slate-500 resize-none min-h-[44px] max-h-[160px] rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="bg-white border-black/15 text-ink text-xs sm:text-sm placeholder:text-neutral-400 resize-none min-h-[44px] max-h-[160px] rounded-xl focus-visible:ring-1 focus-visible:ring-orange focus-visible:border-orange shadow-xs"
               disabled={isStreaming}
             />
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isStreaming}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white h-[44px] px-4 rounded-xl shrink-0 shadow-sm transition-colors"
+              className="bg-orange hover:bg-[#D44F19] text-white h-[44px] px-5 rounded-xl shrink-0 shadow-xs transition-colors cursor-pointer"
               aria-label="Send study query"
             >
               {isStreaming ? (

@@ -3,15 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Plus,
@@ -37,15 +27,11 @@ import {
   Sparkles,
   ArrowRight,
   Target,
-  Award,
   BookOpen,
   CheckCircle2,
-  Calendar,
   Clock,
   AlertTriangle,
-  TrendingDown,
   AlertCircle,
-  Layers,
   Trash2,
 } from "lucide-react";
 
@@ -157,16 +143,15 @@ const eventTypeMeta: Record<
   string,
   { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
 > = {
-  MATERIAL_READY: { label: "Material processed", icon: FileText, color: "text-emerald-400 bg-emerald-500/10" },
-  MATERIAL_PROCESSING: { label: "Processing document", icon: FileText, color: "text-amber-400 bg-amber-500/10" },
-  TUTOR_MESSAGE: { label: "Studied with AI Tutor", icon: MessageSquare, color: "text-indigo-400 bg-indigo-500/10" },
-  QUIZ_COMPLETED: { label: "Completed assessment", icon: ClipboardCheck, color: "text-violet-400 bg-violet-500/10" },
-  MASTERY_UPDATED: { label: "Concept mastery updated", icon: TrendingUp, color: "text-cyan-400 bg-cyan-500/10" },
-  RECOMMENDATION_CREATED: { label: "New recommendation generated", icon: Sparkles, color: "text-amber-400 bg-amber-500/10" },
+  MATERIAL_READY: { label: "Material processed", icon: FileText, color: "text-neutral-700 bg-neutral-100 border-black/5" },
+  MATERIAL_PROCESSING: { label: "Processing document", icon: FileText, color: "text-amber-800 bg-amber-50 border-amber-200" },
+  TUTOR_MESSAGE: { label: "Studied with AI Tutor", icon: MessageSquare, color: "text-[#E85D24] bg-orange-50 border-orange/20" },
+  QUIZ_COMPLETED: { label: "Completed assessment", icon: ClipboardCheck, color: "text-emerald-800 bg-emerald-50 border-emerald-200" },
+  MASTERY_UPDATED: { label: "Concept mastery updated", icon: TrendingUp, color: "text-neutral-800 bg-neutral-100 border-black/5" },
+  RECOMMENDATION_CREATED: { label: "New recommendation generated", icon: Sparkles, color: "text-amber-800 bg-amber-50 border-amber-200" },
 };
 
 export function DashboardContent({
-  userId,
   userName,
   spaces,
   projects,
@@ -260,19 +245,25 @@ export function DashboardContent({
   const hasProjects = projects.length > 0;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
-      {/* Top Greeting & Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/60">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-10 selection:bg-orange/20 selection:text-orange">
+      {/* 1. Greeting / Action Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b hairline">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500">
+              Workspace
+            </span>
+          </div>
+          <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight">
             {greeting}, {userName}
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1">
-            Welcome back to your intelligent study companion.
+          <p className="text-sm text-neutral-600 mt-2 font-sans">
+            Welcome back to your learning workspace.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <Dialog
             open={createSpaceOpen}
             onOpenChange={(open) => {
@@ -286,28 +277,32 @@ export function DashboardContent({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-slate-700 bg-slate-900/60 text-slate-300 hover:text-white text-xs h-9 cursor-pointer"
+                className="border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-9 px-3.5 rounded-xl cursor-pointer shadow-xs transition-colors"
               >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                <Plus className="h-3.5 w-3.5 mr-1.5 text-neutral-500" />
                 New Space
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create a Study Space</DialogTitle>
-                <DialogDescription className="text-slate-400 text-xs">
-                  Spaces organize multiple related projects (e.g. "Computer Science" or "Biology 101").
+            <DialogContent className="bg-white border border-black/10 text-ink max-w-md rounded-[24px] p-6 shadow-xl">
+              <DialogHeader className="space-y-1">
+                <DialogTitle className="display text-2xl font-bold text-ink">
+                  Create a Study Space
+                </DialogTitle>
+                <DialogDescription className="text-neutral-500 text-xs leading-relaxed">
+                  Spaces organize multiple related projects (e.g. &ldquo;Computer Science&rdquo; or &ldquo;Biology 101&rdquo;).
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateSpace} className="space-y-4 pt-2">
                 {createSpaceError && (
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
                     <span>{createSpaceError}</span>
                   </div>
                 )}
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300 text-xs font-medium">Name</Label>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                    Name
+                  </Label>
                   <Input
                     value={spaceName}
                     onChange={(e) => {
@@ -318,27 +313,32 @@ export function DashboardContent({
                     required
                     disabled={creatingSpace}
                     maxLength={100}
-                    className="bg-slate-800/60 border-slate-700 text-white text-sm"
+                    className="bg-white border-black/15 text-ink text-sm rounded-xl h-10 placeholder:text-neutral-400 focus-visible:ring-1 focus-visible:ring-orange focus-visible:border-orange"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300 text-xs font-medium">Description (optional)</Label>
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                    Description (optional)
+                  </Label>
                   <Textarea
                     value={spaceDescription}
                     onChange={(e) => setSpaceDescription(e.target.value)}
                     placeholder="What will you study in this space?"
                     rows={2}
                     disabled={creatingSpace}
-                    className="bg-slate-800/60 border-slate-700 text-white text-sm resize-none"
+                    className="bg-white border-black/15 text-ink text-sm rounded-xl resize-none placeholder:text-neutral-400 focus-visible:ring-1 focus-visible:ring-orange focus-visible:border-orange"
                   />
                 </div>
                 <Button
                   type="submit"
                   disabled={creatingSpace || !spaceName.trim()}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-9 cursor-pointer"
+                  className="w-full bg-orange hover:bg-[#D44F19] text-white text-xs font-medium h-10 rounded-xl cursor-pointer shadow-xs transition-colors"
                 >
                   {creatingSpace ? (
-                    <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />Creating space…</>
+                    <>
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      Creating space…
+                    </>
                   ) : (
                     "Create Space"
                   )}
@@ -350,7 +350,7 @@ export function DashboardContent({
           <Link href="/projects">
             <Button
               size="sm"
-              className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm text-xs h-9"
+              className="bg-ink hover:bg-neutral-800 text-white text-xs h-9 px-3.5 rounded-xl shadow-xs transition-colors"
             >
               <FolderKanban className="h-3.5 w-3.5 mr-1.5" />
               All Projects
@@ -358,83 +358,6 @@ export function DashboardContent({
           </Link>
         </div>
       </div>
-
-      {/* Study Spaces Section */}
-      {spaces && spaces.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-400" />
-              Study Spaces ({spaces.length})
-            </h2>
-            <Link
-              href="/projects"
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors flex items-center gap-1"
-            >
-              All Spaces & Projects ({projects.length}) <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {spaces.map((space) => {
-              const projectCount = space.projects?.length ?? 0;
-              return (
-                <Card
-                  key={space.id}
-                  className="border-slate-800/80 bg-slate-900/60 hover:border-slate-700 transition-colors backdrop-blur-sm flex flex-col justify-between"
-                >
-                  <CardHeader className="p-4 pb-2 space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-semibold text-white truncate flex items-center gap-2">
-                        <FolderKanban className="h-4 w-4 text-indigo-400 shrink-0" />
-                        <span className="truncate">{space.name}</span>
-                      </h3>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-1.5 py-0 border-slate-700 text-slate-400"
-                        >
-                          {projectCount} {projectCount === 1 ? "project" : "projects"}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Delete Space"
-                          onClick={() => {
-                            setSpaceToDelete({ id: space.id, name: space.name });
-                            setDeleteSpaceError(null);
-                          }}
-                          className="h-6 w-6 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                    {space.description && (
-                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                        {space.description}
-                      </p>
-                    )}
-                  </CardHeader>
-                  <CardContent className="p-4 pt-2">
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[11px]">
-                      <span className="text-slate-500 text-[10px]">
-                        Created {formatRelativeTime(space.created_at)}
-                      </span>
-                      <Link
-                        href={`/projects?space=${space.id}`}
-                        className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1"
-                      >
-                        {projectCount > 0 ? "View Projects" : "+ Add Project"} <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Delete Space Confirmation Dialog */}
       <Dialog
@@ -446,24 +369,24 @@ export function DashboardContent({
           }
         }}
       >
-        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-rose-400 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-rose-400" />
+        <DialogContent className="bg-white border border-black/10 text-ink max-w-md rounded-[24px] p-6 shadow-xl">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="display text-2xl font-bold text-rose-600 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-rose-600" />
               Delete this Study Space?
             </DialogTitle>
-            <DialogDescription className="text-slate-300 text-xs pt-1.5 leading-relaxed">
+            <DialogDescription className="text-neutral-600 text-xs pt-1.5 leading-relaxed">
               This will permanently delete the Space{" "}
-              <strong className="text-white font-semibold">
-                "{spaceToDelete?.name}"
+              <strong className="text-ink font-semibold">
+                &ldquo;{spaceToDelete?.name}&rdquo;
               </strong>{" "}
               and any data that is configured to be removed with it. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
 
           {deleteSpaceError && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
               <span>{deleteSpaceError}</span>
             </div>
           )}
@@ -477,7 +400,7 @@ export function DashboardContent({
                 setSpaceToDelete(null);
                 setDeleteSpaceError(null);
               }}
-              className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs h-9 cursor-pointer"
+              className="border-black/10 bg-white hover:bg-neutral-50 text-neutral-700 text-xs h-9 rounded-xl cursor-pointer"
             >
               Cancel
             </Button>
@@ -485,7 +408,7 @@ export function DashboardContent({
               type="button"
               disabled={deletingSpace}
               onClick={handleDeleteSpace}
-              className="bg-rose-600 hover:bg-rose-500 text-white text-xs h-9 cursor-pointer font-medium"
+              className="bg-rose-600 hover:bg-rose-700 text-white text-xs h-9 px-4 rounded-xl cursor-pointer font-medium shadow-xs"
             >
               {deletingSpace ? (
                 <>
@@ -503,22 +426,22 @@ export function DashboardContent({
         </DialogContent>
       </Dialog>
 
-      {/* Account with 0 Projects */}
+      {/* Account with 0 Projects Empty States */}
       {!hasProjects ? (
         spaces && spaces.length > 0 ? (
-          <div className="p-8 rounded-xl bg-slate-900/40 border border-slate-800/60 text-center space-y-4 my-4">
-            <div className="p-3 rounded-full bg-indigo-500/10 text-indigo-400 w-fit mx-auto">
-              <BookOpen className="h-6 w-6" />
+          <div className="p-8 sm:p-12 rounded-[24px] bg-white border border-black/10 subtle-shadow text-center space-y-4 my-6">
+            <div className="w-12 h-12 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
+              <BookOpen className="h-6 w-6 text-ink" />
             </div>
-            <div className="space-y-1 max-w-md mx-auto">
-              <h3 className="text-base font-semibold text-white">Your study space is ready</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="display text-2xl font-bold text-ink">Your study space is ready</h3>
+              <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
                 Now create your first study project inside a space to upload lecture slides, PDF notes, or textbooks and unlock AI-powered study tools.
               </p>
             </div>
             <div className="pt-2">
               <Link href={`/projects?space=${spaces[0].id}`}>
-                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-9">
+                <Button size="sm" className="bg-orange hover:bg-[#D44F19] text-white text-xs h-10 px-5 rounded-xl shadow-xs">
                   <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Create First Project in {spaces[0].name}
                 </Button>
@@ -532,542 +455,626 @@ export function DashboardContent({
             description="Create your first study project to upload lecture slides, PDF notes, or textbooks and unlock AI-powered study tools."
             actionLabel="Create First Project"
             actionHref="/projects"
-            className="my-8 py-16"
+            className="my-8 py-16 bg-white border border-black/10 rounded-[26px] subtle-shadow"
           >
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full text-left">
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                <FileText className="h-5 w-5 text-indigo-400 mb-2" />
-                <h4 className="text-xs font-semibold text-white">1. Upload Materials</h4>
-                <p className="text-[11px] text-slate-400 mt-1">Upload lecture notes or textbooks in PDF format.</p>
+              <div className="p-5 rounded-2xl bg-[#F9F8F5] border border-black/5">
+                <FileText className="h-5 w-5 text-neutral-700 mb-2" />
+                <h4 className="text-xs font-semibold text-ink">1. Upload Materials</h4>
+                <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">
+                  Upload lecture notes or textbooks in PDF format.
+                </p>
               </div>
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                <MessageSquare className="h-5 w-5 text-violet-400 mb-2" />
-                <h4 className="text-xs font-semibold text-white">2. Grounded Tutor</h4>
-                <p className="text-[11px] text-slate-400 mt-1">Ask questions backed by exact source citations.</p>
+              <div className="p-5 rounded-2xl bg-[#F9F8F5] border border-black/5">
+                <MessageSquare className="h-5 w-5 text-orange mb-2" />
+                <h4 className="text-xs font-semibold text-ink">2. Grounded Tutor</h4>
+                <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">
+                  Ask questions backed by exact source citations.
+                </p>
               </div>
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                <ClipboardCheck className="h-5 w-5 text-emerald-400 mb-2" />
-                <h4 className="text-xs font-semibold text-white">3. Adaptive Quizzes</h4>
-                <p className="text-[11px] text-slate-400 mt-1">Test your mastery and track learning growth.</p>
+              <div className="p-5 rounded-2xl bg-[#F9F8F5] border border-black/5">
+                <ClipboardCheck className="h-5 w-5 text-emerald-600 mb-2" />
+                <h4 className="text-xs font-semibold text-ink">3. Adaptive Quizzes</h4>
+                <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">
+                  Test your mastery and track learning growth.
+                </p>
               </div>
             </div>
           </EmptyState>
         )
       ) : (
         <>
-          {/* Section 1: Continue Learning Hero Card (A1) */}
+          {/* 2. CONTINUE LEARNING (Dominant Level 1 Surface) */}
           {continueProject && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <Target className="h-4 w-4 text-indigo-400" />
-                  Continue Learning
-                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange" />
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                    Continue Learning
+                  </h2>
+                </div>
                 <Link
                   href="/projects"
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors flex items-center gap-1"
+                  className="text-xs text-neutral-600 hover:text-ink font-medium transition-colors flex items-center gap-1 group"
                 >
-                  View all ({projects.length}) <ArrowRight className="h-3 w-3" />
+                  <span>All projects ({projects.length})</span>
+                  <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
 
-              <Card className="border-slate-800/90 bg-gradient-to-br from-slate-900/90 to-slate-900/50 backdrop-blur-md shadow-lg overflow-hidden">
-                <CardContent className="p-5 sm:p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="space-y-3 flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {continueProject.spaces?.name && (
-                          <Badge
-                            variant="outline"
-                            className="bg-slate-800/80 text-slate-300 border-slate-700 text-[11px] font-medium"
-                          >
-                            <FolderKanban className="h-3 w-3 mr-1 text-slate-400" />
-                            {continueProject.spaces.name}
-                          </Badge>
-                        )}
-                        <Badge
-                          variant="outline"
-                          className="bg-indigo-500/10 text-indigo-300 border-indigo-500/30 text-[11px] font-medium"
-                        >
-                          Active Project
-                        </Badge>
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Last active {formatRelativeTime(continueProject.updated_at)}
+              <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-8 product-shadow overflow-hidden transition-all">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8">
+                  <div className="space-y-4 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      {continueProject.spaces?.name && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F5F3EE] border border-black/5 text-neutral-700 text-[11px] font-medium">
+                          <FolderKanban className="h-3 w-3 text-neutral-500" />
+                          {continueProject.spaces.name}
                         </span>
-                      </div>
-
-                      <div>
-                        <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                          {continueProject.name}
-                        </h3>
-                        {continueProject.description && (
-                          <p className="text-xs sm:text-sm text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                            {continueProject.description}
-                          </p>
-                        )}
-                        {continueProject.learning_goal && (
-                          <p className="text-xs text-indigo-300/90 mt-2 flex items-center gap-1.5 font-medium">
-                            <span>🎯 Goal:</span> {continueProject.learning_goal}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Latest Activity Context Line */}
-                      {latestActivity && (
-                        <div className="flex items-center gap-2 text-xs text-indigo-300/90 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-md max-w-fit">
-                          <Clock className="h-3 w-3 text-indigo-400 shrink-0" />
-                          <span>
-                            Recent:{" "}
-                            <strong className="font-semibold text-white">
-                              {eventTypeMeta[latestActivity.event_type]?.label ||
-                                latestActivity.event_type.replace(/_/g, " ")}
-                            </strong>
-                          </span>
-                          {latestActivity.payload &&
-                            typeof latestActivity.payload === "object" &&
-                            "fileName" in latestActivity.payload &&
-                            typeof latestActivity.payload.fileName === "string" && (
-                              <span className="text-slate-300">
-                                ({latestActivity.payload.fileName})
-                              </span>
-                            )}
-                          {latestActivity.payload &&
-                            typeof latestActivity.payload === "object" &&
-                            "score" in latestActivity.payload &&
-                            typeof latestActivity.payload.score === "number" && (
-                              <span className="text-emerald-400 font-semibold">
-                                ({latestActivity.payload.score}%)
-                              </span>
-                            )}
-                        </div>
                       )}
-
-                      {/* Project Metrics pill */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
-                        <span className="flex items-center gap-1.5">
-                          <FileText className="h-3.5 w-3.5 text-slate-400" />
-                          {continueProject.materials?.filter((m) => m.status === "ready").length ?? 0} ready materials
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                          {continueProject.concepts?.length ?? 0} concepts
-                        </span>
-                        {continueProjectMastery !== null && (
-                          <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                            <TrendingUp className="h-3.5 w-3.5" />
-                            {continueProjectMastery}% Project Mastery
-                          </span>
-                        )}
-                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange/10 text-orange border border-orange/20 text-[11px] font-semibold">
+                        Active Project
+                      </span>
+                      <span className="text-[11px] text-neutral-400 flex items-center gap-1 ml-1">
+                        <Clock className="h-3 w-3" />
+                        Last active {formatRelativeTime(continueProject.updated_at)}
+                      </span>
                     </div>
 
-                    {/* CTAs */}
-                    <div className="flex flex-wrap lg:flex-col items-stretch gap-2.5 shrink-0 lg:w-48">
-                      <Link href={`/projects/${continueProject.id}`} className="flex-1 lg:flex-initial">
-                        <Button
-                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs h-10 shadow-sm"
-                        >
-                          Continue Project
-                          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                        </Button>
-                      </Link>
-                      <div className="flex items-center gap-2 w-full">
-                        <Link href={`/tutor?project=${continueProject.id}`} className="flex-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-slate-700 bg-slate-800/80 hover:bg-slate-750 text-slate-200 text-xs h-8"
-                          >
-                            <MessageSquare className="h-3 w-3 mr-1.5 text-indigo-400" />
-                            Tutor
-                          </Button>
-                        </Link>
-                        <Link href={`/quiz?project=${continueProject.id}`} className="flex-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-slate-700 bg-slate-800/80 hover:bg-slate-750 text-slate-200 text-xs h-8"
-                          >
-                            <ClipboardCheck className="h-3 w-3 mr-1.5 text-emerald-400" />
-                            Quiz
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Section 1.5: Recent Projects Bounded Grid (A2) */}
-          {recentProjects && recentProjects.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <FolderKanban className="h-4 w-4 text-sky-400" />
-                  Recent Projects
-                </h2>
-                <Link
-                  href="/projects"
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors flex items-center gap-1"
-                >
-                  All Spaces & Projects ({projects.length}) <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                {recentProjects.map((p) => (
-                  <Card
-                    key={p.id}
-                    className="border-slate-800/80 bg-slate-900/60 hover:border-slate-700 transition-colors backdrop-blur-sm flex flex-col justify-between"
-                  >
-                    <CardHeader className="p-4 pb-2 space-y-1">
-                      <div className="flex items-start justify-between gap-1.5">
-                        <h3 className="text-sm font-semibold text-white truncate">{p.name}</h3>
-                        {p.spaces?.name && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1.5 py-0 shrink-0 border-slate-700 text-slate-400"
-                          >
-                            {p.spaces.name}
-                          </Badge>
-                        )}
-                      </div>
-                      {p.description && (
-                        <p className="text-[11px] text-slate-400 line-clamp-1 leading-relaxed">
-                          {p.description}
+                    <div>
+                      <h3 className="display text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-tight">
+                        {continueProject.name}
+                      </h3>
+                      {continueProject.description && (
+                        <p className="text-sm text-neutral-600 mt-2 line-clamp-2 leading-relaxed max-w-2xl font-sans">
+                          {continueProject.description}
                         </p>
                       )}
-                    </CardHeader>
-                    <CardContent className="p-4 pt-1 space-y-2.5">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span>Mastery</span>
-                          <span className="font-semibold text-slate-200">{p.averageMastery ?? 0}%</span>
-                        </div>
-                        <Progress value={p.averageMastery ?? 0} className="h-1 bg-slate-800" />
-                      </div>
+                      {continueProject.learning_goal && (
+                        <p className="text-xs text-neutral-700 mt-2 flex items-center gap-1.5 font-medium">
+                          <span className="text-neutral-400">🎯 Goal:</span> {continueProject.learning_goal}
+                        </p>
+                      )}
+                    </div>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[11px]">
-                        <span className="text-slate-400">
-                          {p.materials?.filter((m) => m.status === "ready").length ?? 0} materials
+                    {/* Latest Activity Context Line */}
+                    {latestActivity && (
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-700 bg-[#F9F8F5] border border-black/5 px-3 py-1.5 rounded-xl max-w-fit">
+                        <Clock className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                        <span>
+                          Recent:{" "}
+                          <strong className="font-semibold text-ink">
+                            {eventTypeMeta[latestActivity.event_type]?.label ||
+                              latestActivity.event_type.replace(/_/g, " ")}
+                          </strong>
                         </span>
-                        <Link
-                          href={`/projects/${p.id}`}
-                          className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1"
-                        >
-                          Open <ArrowRight className="h-3 w-3" />
-                        </Link>
+                        {latestActivity.payload &&
+                          typeof latestActivity.payload === "object" &&
+                          "fileName" in latestActivity.payload &&
+                          typeof latestActivity.payload.fileName === "string" && (
+                            <span className="text-neutral-500">
+                              ({latestActivity.payload.fileName})
+                            </span>
+                          )}
+                        {latestActivity.payload &&
+                          typeof latestActivity.payload === "object" &&
+                          "score" in latestActivity.payload &&
+                          typeof latestActivity.payload.score === "number" && (
+                            <span className="text-emerald-600 font-semibold">
+                              ({latestActivity.payload.score}%)
+                            </span>
+                          )}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    )}
+
+                    {/* Project Metrics */}
+                    <div className="flex flex-wrap items-center gap-5 text-xs text-neutral-500 pt-1">
+                      <span className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-neutral-400" />
+                        <strong className="text-ink font-semibold">
+                          {continueProject.materials?.filter((m) => m.status === "ready").length ?? 0}
+                        </strong>{" "}
+                        ready materials
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-neutral-400" />
+                        <strong className="text-ink font-semibold">
+                          {continueProject.concepts?.length ?? 0}
+                        </strong>{" "}
+                        concepts
+                      </span>
+                      {continueProjectMastery !== null && (
+                        <span className="flex items-center gap-1.5 text-neutral-800 font-medium">
+                          <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                          <strong className="text-ink font-bold">{continueProjectMastery}%</strong> Mastery
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* CTAs */}
+                  <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-2.5 shrink-0 lg:w-52">
+                    <Link href={`/projects/${continueProject.id}`} className="w-full">
+                      <Button
+                        className="w-full bg-orange hover:bg-[#D44F19] text-white font-medium text-sm h-11 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Continue Project</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <div className="flex items-center gap-2 w-full">
+                      <Link href={`/tutor?project=${continueProject.id}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-9 rounded-xl font-medium cursor-pointer"
+                        >
+                          <MessageSquare className="h-3 w-3 mr-1.5 text-neutral-500" />
+                          Tutor
+                        </Button>
+                      </Link>
+                      <Link href={`/quiz?project=${continueProject.id}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-9 rounded-xl font-medium cursor-pointer"
+                        >
+                          <ClipboardCheck className="h-3 w-3 mr-1.5 text-neutral-500" />
+                          Quiz
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Section 2: Learning Snapshot KPI Cards (A3) */}
+          {/* 3. LEARNING SNAPSHOT (Calm Progress Overview) */}
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <Award className="h-4 w-4 text-amber-400" />
-              Your Learning Snapshot
-            </h2>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+              <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                Learning Snapshot
+              </h2>
+            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-              {/* Concepts Tracked */}
-              <Card className="border-slate-800/80 bg-slate-900/60 backdrop-blur-sm">
-                <CardContent className="p-4 space-y-1.5">
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span className="text-xs font-medium">Concepts Tracked</span>
-                    <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-                      <Sparkles className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-white tracking-tight">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Concepts Mastered */}
+              <div className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow flex flex-col justify-between">
+                <span className="text-[11px] uppercase tracking-[.14em] font-semibold text-neutral-500">
+                  Concepts Mastered
+                </span>
+                <div className="mt-3">
+                  <div className="text-3xl sm:text-4xl font-bold text-ink tracking-tight font-sans">
                     {snapshot.totalConcepts}
                   </div>
-                  <p className="text-[11px] text-slate-400">Extracted from materials</p>
-                </CardContent>
-              </Card>
+                  <p className="text-xs text-neutral-400 mt-1 font-sans">
+                    Extracted from materials
+                  </p>
+                </div>
+              </div>
 
               {/* Overall Mastery */}
-              <Card className="border-slate-800/80 bg-slate-900/60 backdrop-blur-sm">
-                <CardContent className="p-4 space-y-1.5">
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span className="text-xs font-medium">Overall Mastery</span>
-                    <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-                      <TrendingUp className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-white tracking-tight">
+              <div className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow flex flex-col justify-between">
+                <span className="text-[11px] uppercase tracking-[.14em] font-semibold text-neutral-500">
+                  Overall Mastery
+                </span>
+                <div className="mt-3">
+                  <div className="text-3xl sm:text-4xl font-bold text-ink tracking-tight font-sans">
                     {snapshot.overallMastery !== null ? `${snapshot.overallMastery}%` : "—"}
                   </div>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-neutral-400 mt-1 font-sans">
                     {snapshot.overallMastery !== null ? "Across all concepts" : "Awaiting quiz data"}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Average Quiz Score */}
-              <Card className="border-slate-800/80 bg-slate-900/60 backdrop-blur-sm">
-                <CardContent className="p-4 space-y-1.5">
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span className="text-xs font-medium">Average Score</span>
-                    <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-                      <Award className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-white tracking-tight">
+              <div className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow flex flex-col justify-between">
+                <span className="text-[11px] uppercase tracking-[.14em] font-semibold text-neutral-500">
+                  Average Quiz Score
+                </span>
+                <div className="mt-3">
+                  <div className="text-3xl sm:text-4xl font-bold text-ink tracking-tight font-sans">
                     {snapshot.avgScore !== null ? `${snapshot.avgScore}%` : "—"}
                   </div>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-neutral-400 mt-1 font-sans">
                     {snapshot.quizzesTaken > 0 ? "From completed tests" : "No quizzes taken"}
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Quizzes Completed */}
-              <Card className="border-slate-800/80 bg-slate-900/60 backdrop-blur-sm">
-                <CardContent className="p-4 space-y-1.5">
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span className="text-xs font-medium">Quizzes Completed</span>
-                    <div className="p-1.5 rounded-lg bg-violet-500/10 text-violet-400">
-                      <ClipboardCheck className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-white tracking-tight">
+              <div className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow flex flex-col justify-between">
+                <span className="text-[11px] uppercase tracking-[.14em] font-semibold text-neutral-500">
+                  Quizzes Completed
+                </span>
+                <div className="mt-3">
+                  <div className="text-3xl sm:text-4xl font-bold text-ink tracking-tight font-sans">
                     {snapshot.quizzesTaken}
                   </div>
-                  <p className="text-[11px] text-slate-400">Adaptive assessments</p>
-                </CardContent>
-              </Card>
+                  <p className="text-xs text-neutral-400 mt-1 font-sans">
+                    Adaptive assessments
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Section 2.5: Areas Requiring Attention (A4) */}
+          {/* 4. ACTIVE RECOMMENDATION (Answers "What should I do next?") */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-400" />
-                Areas Requiring Attention
-              </h2>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange" />
+                <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                  Active Recommendation
+                </h2>
+              </div>
+              <Link
+                href="/recommendations"
+                className="text-xs text-neutral-600 hover:text-ink font-medium transition-colors flex items-center gap-1 group"
+              >
+                <span>All tasks</span>
+                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
+
+            {topRecommendation ? (
+              <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-7 subtle-shadow">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-semibold uppercase tracking-wider">
+                        {topRecommendation.priority} Priority
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F5F3EE] border border-black/5 text-neutral-700 text-[10px] uppercase font-medium">
+                        {topRecommendation.action_type.replace(/_/g, " ")}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-bold text-ink leading-snug">
+                        {topRecommendation.concepts?.name
+                          ? `Strengthen: ${topRecommendation.concepts.name}`
+                          : `Review: ${topRecommendation.projects?.name ?? "Study Material"}`}
+                      </h3>
+                      {topRecommendation.projects?.name && (
+                        <p className="text-xs text-neutral-500 mt-1">
+                          In project: <span className="text-neutral-800 font-medium">{topRecommendation.projects.name}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {topRecommendation.reasoning && (
+                      <div className="p-3.5 rounded-xl bg-[#F9F8F5] border border-black/5 text-xs text-neutral-600 leading-relaxed max-w-2xl">
+                        <span className="font-semibold text-ink block mb-0.5">Why this is recommended:</span>
+                        {topRecommendation.reasoning}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap sm:flex-nowrap lg:flex-col items-stretch gap-2.5 shrink-0 lg:w-52">
+                    <Link href={`/tutor?project=${topRecommendation.project_id}`} className="flex-1 lg:flex-initial">
+                      <Button
+                        className="w-full bg-ink hover:bg-neutral-800 text-white font-medium text-xs h-10 px-4 rounded-xl shadow-xs transition-colors cursor-pointer"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                        Start Review with Tutor
+                      </Button>
+                    </Link>
+                    <Link href={`/quiz?project=${topRecommendation.project_id}`} className="flex-1 lg:flex-initial">
+                      <Button
+                        variant="outline"
+                        className="w-full border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-10 px-4 rounded-xl font-medium cursor-pointer"
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5 mr-1.5 text-neutral-500" />
+                        Take Quiz
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-black/10 p-6 text-center subtle-shadow flex flex-col items-center justify-center py-10">
+                <CheckCircle2 className="h-8 w-8 text-neutral-400 mb-2" />
+                <p className="text-sm font-semibold text-ink">You are all caught up!</p>
+                <p className="text-xs text-neutral-500 mt-1 max-w-sm leading-relaxed">
+                  As you take quizzes and study with the AI Tutor, smart recommendations will automatically appear here.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* 5. AREAS REQUIRING ATTENTION (Supportive Tone) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                  Areas Requiring Attention
+                </h2>
+              </div>
               <Link
                 href="/growth"
-                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors flex items-center gap-1"
+                className="text-xs text-neutral-600 hover:text-ink font-medium transition-colors flex items-center gap-1 group"
               >
-                Full Growth Analysis <ArrowRight className="h-3 w-3" />
+                <span>Full growth analysis</span>
+                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
 
             {attentionItems && attentionItems.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {attentionItems.map((item) => (
-                  <Card
+                  <div
                     key={`${item.projectId}-${item.conceptId}`}
-                    className="border-rose-500/20 bg-rose-500/5 backdrop-blur-sm flex flex-col justify-between"
+                    className="bg-white rounded-2xl border border-black/10 p-4 subtle-shadow flex flex-col justify-between hover:border-black/20 transition-colors"
                   >
-                    <CardHeader className="p-4 pb-2 space-y-1">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-1">
-                        <Badge
-                          variant="outline"
-                          className="border-rose-500/30 text-rose-300 bg-rose-500/10 text-[10px] font-semibold"
-                        >
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700 text-[10px] font-medium">
                           Needs Focus
-                        </Badge>
-                        <span className="text-xs font-bold text-rose-300">{item.masteryScore}% Mastery</span>
+                        </span>
+                        <span className="text-xs font-bold text-neutral-800">{item.masteryScore}% Mastery</span>
                       </div>
-                      <CardTitle className="text-sm font-semibold text-white leading-snug truncate pt-1">
+                      <h4 className="text-sm font-semibold text-ink leading-snug truncate pt-1">
                         {item.conceptName}
-                      </CardTitle>
-                      <CardDescription className="text-[11px] text-slate-400 truncate">
+                      </h4>
+                      <p className="text-[11px] text-neutral-400 truncate">
                         In: {item.projectName}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-1">
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-800/60">
-                        <Link href={`/tutor?project=${item.projectId}`} className="flex-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[11px] h-7 px-2"
-                          >
-                            <MessageSquare className="h-3 w-3 mr-1 text-indigo-400" />
-                            Review
-                          </Button>
-                        </Link>
-                        <Link href={`/quiz?project=${item.projectId}`} className="flex-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[11px] h-7 px-2"
-                          >
-                            <ClipboardCheck className="h-3 w-3 mr-1 text-emerald-400" />
-                            Quiz
-                          </Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-3 mt-3 border-t hairline">
+                      <Link href={`/tutor?project=${item.projectId}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-black/10 bg-white hover:bg-neutral-50 text-ink text-[11px] h-7 px-2 rounded-lg font-medium cursor-pointer"
+                        >
+                          <MessageSquare className="h-3 w-3 mr-1 text-neutral-400" />
+                          Review
+                        </Button>
+                      </Link>
+                      <Link href={`/quiz?project=${item.projectId}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-black/10 bg-white hover:bg-neutral-50 text-ink text-[11px] h-7 px-2 rounded-lg font-medium cursor-pointer"
+                        >
+                          <ClipboardCheck className="h-3 w-3 mr-1 text-neutral-400" />
+                          Quiz
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
-              <Card className="border-slate-800/80 bg-slate-900/40 p-4">
+              <div className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow">
                 <div className="flex items-center gap-3 text-xs">
-                  <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-                    <CheckCircle2 className="h-4 w-4" />
+                  <div className="p-2 rounded-xl bg-[#F5F3EE] text-ink shrink-0">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-white">All concepts in good standing</p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="font-semibold text-ink">All concepts in good standing</p>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">
                       No concepts currently have a declining trend or mastery below 60%. Keep up the regular quiz practice!
                     </p>
                   </div>
                 </div>
-              </Card>
+              </div>
             )}
           </div>
 
-          {/* Section 3: Two-column layout (Recommended Next & Recent Activity) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recommended Next Action (A5) */}
+          {/* 6. RECENT PROJECTS */}
+          {recentProjects && recentProjects.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-400" />
-                  Recommended Next
-                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                    Recent Projects
+                  </h2>
+                </div>
                 <Link
-                  href="/recommendations"
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                  href="/projects"
+                  className="text-xs text-neutral-600 hover:text-ink font-medium transition-colors flex items-center gap-1 group"
                 >
-                  All tasks
+                  <span>All spaces & projects ({projects.length})</span>
+                  <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
 
-              {topRecommendation ? (
-                <Card className="border-slate-800/90 bg-slate-900/60 backdrop-blur-sm h-[calc(100%-2rem)] flex flex-col justify-between">
-                  <CardHeader className="p-5 pb-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[10px] font-semibold uppercase tracking-wider"
-                      >
-                        {topRecommendation.priority} Priority
-                      </Badge>
-                      <Badge variant="outline" className="bg-slate-800 text-slate-300 border-slate-700 text-[10px]">
-                        {topRecommendation.action_type.replace(/_/g, " ")}
-                      </Badge>
-                    </div>
-
-                    <CardTitle className="text-base font-semibold text-white leading-snug">
-                      {topRecommendation.concepts?.name
-                        ? `Strengthen: ${topRecommendation.concepts.name}`
-                        : `Review: ${topRecommendation.projects?.name ?? "Study Material"}`}
-                    </CardTitle>
-                    {topRecommendation.projects?.name && (
-                      <p className="text-xs text-slate-400">
-                        In project: <span className="text-slate-300">{topRecommendation.projects.name}</span>
-                      </p>
-                    )}
-                  </CardHeader>
-
-                  <CardContent className="p-5 pt-0 space-y-4">
-                    {topRecommendation.reasoning && (
-                      <div className="p-3 rounded-lg bg-slate-800/40 border border-slate-800/80 text-xs text-slate-300 leading-relaxed">
-                        <span className="font-semibold text-slate-200 block mb-1">Why this is recommended:</span>
-                        {topRecommendation.reasoning}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {recentProjects.map((p) => (
+                  <div
+                    key={p.id}
+                    className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow flex flex-col justify-between hover:border-black/20 transition-colors"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <h3 className="text-sm font-semibold text-ink truncate font-sans">{p.name}</h3>
+                        {p.spaces?.name && (
+                          <span className="text-[10px] px-2 py-0.5 shrink-0 rounded-full bg-[#F5F3EE] border border-black/5 text-neutral-600 font-medium">
+                            {p.spaces.name}
+                          </span>
+                        )}
                       </div>
-                    )}
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <Link href={`/tutor?project=${topRecommendation.project_id}`}>
-                        <Button
-                          size="sm"
-                          className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8 px-3.5 shadow-sm"
-                        >
-                          <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                          Start Review with Tutor
-                        </Button>
-                      </Link>
-                      <Link href={`/quiz?project=${topRecommendation.project_id}`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs h-8 px-3.5"
-                        >
-                          <ClipboardCheck className="h-3.5 w-3.5 mr-1.5" />
-                          Take Quiz
-                        </Button>
-                      </Link>
+                      {p.description && (
+                        <p className="text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">
+                          {p.description}
+                        </p>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="border-slate-800/80 bg-slate-900/40 p-6 text-center h-[calc(100%-2rem)] flex flex-col items-center justify-center">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-400/80 mb-2" />
-                  <p className="text-sm font-medium text-white">You are all caught up!</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                    As you take quizzes and study with the AI Tutor, smart recommendations will automatically appear here.
-                  </p>
-                </Card>
-              )}
-            </div>
 
-            {/* Recent Activity Timeline */}
+                    <div className="space-y-2.5 pt-3 mt-3 border-t hairline">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                          <span>Mastery</span>
+                          <span className="font-semibold text-ink">{p.averageMastery ?? 0}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+                          <div
+                            className="h-full bg-ink rounded-full transition-all"
+                            style={{ width: `${Math.min(100, Math.max(0, p.averageMastery ?? 0))}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-neutral-400">
+                          {p.materials?.filter((m) => m.status === "ready").length ?? 0} materials
+                        </span>
+                        <Link
+                          href={`/projects/${p.id}`}
+                          className="text-ink hover:text-orange font-medium flex items-center gap-1 transition-colors"
+                        >
+                          Open <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 7. SPACES & ORGANIZATION */}
+          {spaces && spaces.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-sky-400" />
-                  Recent Activity
-                </h2>
-                <span className="text-[11px] text-slate-400">Live events</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                    Study Spaces ({spaces.length})
+                  </h2>
+                </div>
+                <Link
+                  href="/projects"
+                  className="text-xs text-neutral-600 hover:text-ink font-medium transition-colors flex items-center gap-1 group"
+                >
+                  <span>All spaces ({spaces.length})</span>
+                  <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
               </div>
 
-              <Card className="border-slate-800/80 bg-slate-900/50 backdrop-blur-sm p-4">
-                {recentActivity.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-xs">
-                    No recent activity yet. Upload materials or start a quiz to see your learning timeline.
-                  </div>
-                ) : (
-                  <div className="space-y-3.5">
-                    {recentActivity.map((evt) => {
-                      const meta = eventTypeMeta[evt.event_type] ?? {
-                        label: evt.event_type.replace(/_/g, " "),
-                        icon: Sparkles,
-                        color: "text-slate-400 bg-slate-800",
-                      };
-                      const Icon = meta.icon;
-
-                      return (
-                        <div key={evt.id} className="flex items-start gap-3 text-xs group">
-                          <div className={`p-1.5 rounded-lg shrink-0 ${meta.color}`}>
-                            <Icon className="h-3.5 w-3.5" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {spaces.map((space) => {
+                  const projectCount = space.projects?.length ?? 0;
+                  return (
+                    <div
+                      key={space.id}
+                      className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow flex flex-col justify-between hover:border-black/20 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-ink truncate flex items-center gap-2">
+                            <FolderKanban className="h-4 w-4 text-neutral-500 shrink-0" />
+                            <span className="truncate">{space.name}</span>
+                          </h3>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F3EE] border border-black/5 text-neutral-600 font-medium">
+                              {projectCount} {projectCount === 1 ? "project" : "projects"}
+                            </span>
+                            <button
+                              type="button"
+                              title="Delete Space"
+                              onClick={() => {
+                                setSpaceToDelete({ id: space.id, name: space.name });
+                                setDeleteSpaceError(null);
+                              }}
+                              className="h-6 w-6 rounded-md flex items-center justify-center text-neutral-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-slate-200 truncate group-hover:text-white transition-colors">
-                              {meta.label}
-                            </p>
-                            {evt.payload && typeof evt.payload === "object" && (
-                              <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                                {(evt.payload as any).file_name ||
-                                  (evt.payload as any).topic ||
-                                  (evt.payload as any).score !== undefined
-                                  ? `Score: ${(evt.payload as any).score}%`
-                                  : null}
-                              </p>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-slate-400 shrink-0">
-                            {formatRelativeTime(evt.created_at)}
-                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </Card>
+                        {space.description && (
+                          <p className="text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">
+                            {space.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 mt-3 border-t hairline text-[11px]">
+                        <span className="text-neutral-400 text-[10px]">
+                          Created {formatRelativeTime(space.created_at)}
+                        </span>
+                        <Link
+                          href={`/projects?space=${space.id}`}
+                          className="text-ink hover:text-orange font-medium flex items-center gap-1 transition-colors"
+                        >
+                          {projectCount > 0 ? "View Projects" : "+ Add Project"} <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 8. RECENT ACTIVITY (Lightweight Editorial Timeline) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                  Recent Activity
+                </h2>
+              </div>
+              <span className="text-[11px] text-neutral-400">Live events</span>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-black/10 p-6 subtle-shadow">
+              {recentActivity.length === 0 ? (
+                <div className="py-8 text-center text-neutral-400 text-xs font-sans">
+                  No recent activity yet. Upload materials or start a quiz to see your learning timeline.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentActivity.map((evt, idx) => {
+                    const meta = eventTypeMeta[evt.event_type] ?? {
+                      label: evt.event_type.replace(/_/g, " "),
+                      icon: Sparkles,
+                      color: "text-neutral-700 bg-neutral-100 border-black/5",
+                    };
+                    const Icon = meta.icon;
+
+                    return (
+                      <div
+                        key={evt.id}
+                        className={`flex items-start gap-3.5 text-xs group ${
+                          idx !== recentActivity.length - 1 ? "pb-4 border-b hairline" : ""
+                        }`}
+                      >
+                        <div className={`p-2 rounded-xl shrink-0 border ${meta.color}`}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <p className="font-medium text-ink truncate">
+                            {meta.label}
+                          </p>
+                          {evt.payload && typeof evt.payload === "object" && (
+                            <p className="text-[11px] text-neutral-500 truncate mt-0.5">
+                              {(evt.payload as any).file_name ||
+                                (evt.payload as any).topic ||
+                                ((evt.payload as any).score !== undefined
+                                  ? `Score: ${(evt.payload as any).score}%`
+                                  : null)}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-neutral-400 shrink-0 pt-0.5">
+                          {formatRelativeTime(evt.created_at)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </>

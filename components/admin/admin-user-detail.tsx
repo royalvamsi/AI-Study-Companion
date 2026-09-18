@@ -122,7 +122,7 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
   const { user, spaces, projects, activity, assessments, averageScore, mastery, recommendations, aiUsage } = data;
 
   return (
-    <div className="space-y-8 p-6 max-w-7xl mx-auto">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Navigation and Breadcrumb Header */}
       <div className="flex flex-col gap-4">
         <Breadcrumbs
@@ -132,34 +132,34 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
             { label: user.displayName },
           ]}
         />
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-black/10">
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-600 hover:text-[#171717] hover:bg-stone-200/50 transition-colors border border-black/10 bg-white"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 text-neutral-500" />
               Back to Admin
             </Link>
-            <div className="h-4 w-px bg-slate-800" />
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-semibold">
+            <div className="h-4 w-px bg-black/10" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-stone-100 border border-black/10 flex items-center justify-center text-[#171717] font-semibold">
                 {user.displayName.charAt(0).toUpperCase()}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-white tracking-tight">{user.displayName}</h1>
+                  <h1 className="font-serif text-2xl font-normal text-[#171717] tracking-tight">{user.displayName}</h1>
                   {user.isAdmin && (
-                    <Badge className="bg-purple-500/15 text-purple-400 border-purple-500/30 gap-1 text-[11px]">
-                      <Shield className="w-3 h-3" />
+                    <Badge className="bg-amber-50 text-amber-800 border-amber-200 gap-1 text-[11px]">
+                      <Shield className="w-3 h-3 text-[#E85D24]" />
                       Platform Admin
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                <div className="flex items-center gap-3 text-xs text-neutral-500 mt-0.5">
                   <span>{user.email}</span>
                   <span>•</span>
-                  <span className="font-mono text-[11px] text-slate-500">ID: {user.id}</span>
+                  <span className="font-mono text-[11px] text-neutral-400">ID: {user.id}</span>
                   <span>•</span>
                   <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
                 </div>
@@ -170,92 +170,92 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
       </div>
 
       {/* KPI Header Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className="bg-slate-900/60 border-slate-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span>Spaces</span>
-              <Layers className="w-3.5 h-3.5 text-blue-400" />
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardContent className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+              <span className="uppercase tracking-wider font-semibold">Spaces</span>
+              <Layers className="w-3.5 h-3.5 text-[#E85D24]" />
             </div>
-            <div className="text-2xl font-bold text-white">{spaces.length}</div>
+            <div className="font-serif text-2xl font-normal text-[#171717]">{spaces.length}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/60 border-slate-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span>Projects</span>
-              <FolderKanban className="w-3.5 h-3.5 text-indigo-400" />
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardContent className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+              <span className="uppercase tracking-wider font-semibold">Projects</span>
+              <FolderKanban className="w-3.5 h-3.5 text-[#E85D24]" />
             </div>
-            <div className="text-2xl font-bold text-white">{projects.length}</div>
+            <div className="font-serif text-2xl font-normal text-[#171717]">{projects.length}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/60 border-slate-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span>Quizzes</span>
-              <ClipboardCheck className="w-3.5 h-3.5 text-teal-400" />
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardContent className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+              <span className="uppercase tracking-wider font-semibold">Quizzes</span>
+              <ClipboardCheck className="w-3.5 h-3.5 text-emerald-600" />
             </div>
-            <div className="text-2xl font-bold text-white">{assessments.length}</div>
+            <div className="font-serif text-2xl font-normal text-[#171717]">{assessments.length}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/60 border-slate-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span>Avg Score</span>
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardContent className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+              <span className="uppercase tracking-wider font-semibold">Avg Score</span>
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
             </div>
-            <div className="text-2xl font-bold text-emerald-400">{averageScore}%</div>
+            <div className="font-serif text-2xl font-normal text-emerald-700">{averageScore}%</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/60 border-slate-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span>AI Operations</span>
-              <Bot className="w-3.5 h-3.5 text-purple-400" />
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardContent className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+              <span className="uppercase tracking-wider font-semibold">AI Calls</span>
+              <Bot className="w-3.5 h-3.5 text-amber-600" />
             </div>
-            <div className="text-2xl font-bold text-white">{aiUsage.totalCalls}</div>
+            <div className="font-serif text-2xl font-normal text-[#171717]">{aiUsage.totalCalls}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/60 border-slate-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span>Est. Cost</span>
-              <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardContent className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+              <span className="uppercase tracking-wider font-semibold">Spend</span>
+              <DollarSign className="w-3.5 h-3.5 text-[#E85D24]" />
             </div>
-            <div className="text-2xl font-bold text-amber-400">${aiUsage.totalCostUsd.toFixed(4)}</div>
+            <div className="font-serif text-2xl font-normal text-[#171717]">${aiUsage.totalCostUsd.toFixed(4)}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="projects" className="space-y-6">
-        <TabsList className="bg-slate-900/90 border border-slate-800 p-1">
-          <TabsTrigger value="projects" className="gap-2 text-xs">
+      <Tabs defaultValue="projects" className="space-y-4">
+        <TabsList className="bg-stone-200/60 border border-black/10 p-1 flex-wrap rounded-lg">
+          <TabsTrigger value="projects" className="gap-2 text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors">
             <FolderKanban className="w-3.5 h-3.5" />
             Spaces & Projects ({projects.length})
           </TabsTrigger>
-          <TabsTrigger value="mastery" className="gap-2 text-xs">
+          <TabsTrigger value="mastery" className="gap-2 text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors">
             <TrendingUp className="w-3.5 h-3.5" />
             Concept Mastery ({mastery.length})
           </TabsTrigger>
-          <TabsTrigger value="assessments" className="gap-2 text-xs">
+          <TabsTrigger value="assessments" className="gap-2 text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors">
             <ClipboardCheck className="w-3.5 h-3.5" />
             Assessments ({assessments.length})
           </TabsTrigger>
-          <TabsTrigger value="activity" className="gap-2 text-xs">
+          <TabsTrigger value="activity" className="gap-2 text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors">
             <Activity className="w-3.5 h-3.5" />
             Activity Log ({activity.length})
           </TabsTrigger>
-          <TabsTrigger value="recommendations" className="gap-2 text-xs">
+          <TabsTrigger value="recommendations" className="gap-2 text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors">
             <Sparkles className="w-3.5 h-3.5" />
             Recommendations ({recommendations.length})
           </TabsTrigger>
-          <TabsTrigger value="ai" className="gap-2 text-xs">
+          <TabsTrigger value="ai" className="gap-2 text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors">
             <Bot className="w-3.5 h-3.5" />
             AI Telemetry ({aiUsage.totalCalls})
           </TabsTrigger>
@@ -265,33 +265,33 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
         <TabsContent value="projects" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Spaces List */}
-            <Card className="bg-slate-900/60 border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-base text-white flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-400" />
+            <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+              <CardHeader className="p-5 pb-2">
+                <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[#E85D24]" />
                   Spaces Owned ({spaces.length})
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-neutral-500">
                   Top-level organization spaces configured by this user
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="p-5 pt-2 space-y-2.5">
                 {spaces.length === 0 ? (
-                  <EmptyState title="No Spaces" description="User has not created any spaces yet." />
+                  <div className="py-8 text-center text-xs text-neutral-400">User has not created any spaces yet.</div>
                 ) : (
                   spaces.map((space) => (
                     <div
                       key={space.id}
-                      className="p-3.5 rounded-lg border border-slate-800/80 bg-slate-950/40 hover:border-slate-700 transition-colors"
+                      className="p-3.5 rounded-lg border border-black/5 bg-[#F5F3EE] hover:border-black/20 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="font-semibold text-sm text-slate-200">{space.name}</div>
+                          <div className="font-semibold text-sm text-[#171717]">{space.name}</div>
                           {space.description && (
-                            <p className="text-xs text-slate-400 mt-0.5">{space.description}</p>
+                            <p className="text-xs text-neutral-500 mt-0.5">{space.description}</p>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] text-neutral-400">
                           {new Date(space.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -302,38 +302,38 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
             </Card>
 
             {/* Projects List */}
-            <Card className="bg-slate-900/60 border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-base text-white flex items-center gap-2">
-                  <FolderKanban className="w-4 h-4 text-indigo-400" />
+            <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+              <CardHeader className="p-5 pb-2">
+                <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                  <FolderKanban className="w-4 h-4 text-[#E85D24]" />
                   Learning Projects ({projects.length})
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-neutral-500">
                   Active study projects with defined learning goals
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="p-5 pt-2 space-y-2.5">
                 {projects.length === 0 ? (
-                  <EmptyState title="No Projects" description="User has not created any projects yet." />
+                  <div className="py-8 text-center text-xs text-neutral-400">User has not created any projects yet.</div>
                 ) : (
                   projects.map((proj) => (
                     <div
                       key={proj.id}
-                      className="p-3.5 rounded-lg border border-slate-800/80 bg-slate-950/40 hover:border-slate-700 transition-colors"
+                      className="p-3.5 rounded-lg border border-black/5 bg-[#F5F3EE] hover:border-black/20 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="font-semibold text-sm text-slate-200">{proj.name}</div>
+                          <div className="font-semibold text-sm text-[#171717]">{proj.name}</div>
                           {proj.learning_goal && (
-                            <p className="text-xs text-blue-400/90 mt-1 line-clamp-2">
+                            <p className="text-xs text-neutral-600 mt-1 line-clamp-2">
                               🎯 Goal: {proj.learning_goal}
                             </p>
                           )}
                           {proj.description && (
-                            <p className="text-xs text-slate-400 mt-1 line-clamp-2">{proj.description}</p>
+                            <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{proj.description}</p>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] text-neutral-400">
                           {new Date(proj.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -347,24 +347,23 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
 
         {/* Tab 2: Concept Mastery */}
         <TabsContent value="mastery" className="space-y-4">
-          <Card className="bg-slate-900/60 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-base text-white flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-purple-400" />
+          <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
                 Assessed Concept Mastery ({mastery.length})
               </CardTitle>
-              <CardDescription className="text-xs text-slate-400">
+              <CardDescription className="text-xs text-neutral-500">
                 Calculated mastery score, learning trend, and assessment history per concept
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5 pt-2">
               {mastery.length === 0 ? (
-                <EmptyState
-                  title="No Mastery Data"
-                  description="User has not taken any assessments or established concept mastery."
-                />
+                <div className="py-8 text-center text-xs text-neutral-400">
+                  User has not taken any assessments or established concept mastery.
+                </div>
               ) : (
-                <div className="divide-y divide-slate-800/60">
+                <div className="divide-y divide-black/5">
                   {mastery.map((item, idx) => {
                     const score = Math.round(item.mastery_score ?? 0);
                     const isLow = score < 60 || item.trend === "NEEDS_ATTENTION";
@@ -373,10 +372,10 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
                     return (
                       <div key={item.concept_id || idx} className="py-3.5 flex items-center justify-between gap-4">
                         <div className="space-y-1 min-w-[200px]">
-                          <div className="text-sm font-medium text-slate-200">
+                          <div className="text-sm font-medium text-[#171717]">
                             {item.concepts?.name || item.concept_id}
                           </div>
-                          <div className="text-xs text-slate-400">
+                          <div className="text-xs text-neutral-500">
                             Project: {item.projects?.name || "Global"} • Assessed {item.assessment_count} times
                           </div>
                         </div>
@@ -385,10 +384,10 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
                           <Badge
                             className={`text-[11px] ${
                               item.trend === "IMPROVING"
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                 : item.trend === "NEEDS_ATTENTION"
-                                ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
-                                : "bg-slate-500/15 text-slate-300 border-slate-500/30"
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                : "bg-stone-100 text-stone-700 border-stone-200"
                             }`}
                           >
                             {item.trend}
@@ -396,19 +395,19 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
 
                           <div className="w-32 space-y-1">
                             <div className="flex justify-between text-xs">
-                              <span className="text-slate-400">Mastery</span>
+                              <span className="text-neutral-500">Mastery</span>
                               <span
                                 className={`font-semibold ${
-                                  isLow ? "text-rose-400" : isHigh ? "text-emerald-400" : "text-amber-400"
+                                  isLow ? "text-rose-700" : isHigh ? "text-emerald-700" : "text-amber-700"
                                 }`}
                               >
                                 {score}%
                               </span>
                             </div>
-                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
-                                  isLow ? "bg-rose-500" : isHigh ? "bg-emerald-500" : "bg-amber-500"
+                                  isLow ? "bg-rose-500" : isHigh ? "bg-emerald-500" : "bg-[#E85D24]"
                                 }`}
                                 style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
                               />
@@ -426,26 +425,25 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
 
         {/* Tab 3: Assessments */}
         <TabsContent value="assessments" className="space-y-4">
-          <Card className="bg-slate-900/60 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-base text-white flex items-center gap-2">
-                <ClipboardCheck className="w-4 h-4 text-teal-400" />
+          <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                <ClipboardCheck className="w-4 h-4 text-emerald-600" />
                 Completed Assessments ({assessments.length})
               </CardTitle>
-              <CardDescription className="text-xs text-slate-400">
+              <CardDescription className="text-xs text-neutral-500">
                 Performance history, questions answered, and scores
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5 pt-2">
               {assessments.length === 0 ? (
-                <EmptyState
-                  title="No Assessments Completed"
-                  description="This user has not completed any quizzes yet."
-                />
+                <div className="py-8 text-center text-xs text-neutral-400">
+                  This user has not completed any quizzes yet.
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
-                    <thead className="text-slate-400 border-b border-slate-800 pb-2">
+                    <thead className="text-neutral-500 border-b border-black/10 pb-2">
                       <tr>
                         <th className="py-2.5 font-medium">Assessment ID</th>
                         <th className="py-2.5 font-medium">Questions</th>
@@ -453,25 +451,25 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
                         <th className="py-2.5 font-medium">Date</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    <tbody className="divide-y divide-black/5 text-[#171717]">
                       {assessments.map((a) => (
-                        <tr key={a.id} className="hover:bg-slate-800/30">
-                          <td className="py-3 font-mono text-[11px] text-slate-400">{a.id}</td>
+                        <tr key={a.id} className="hover:bg-stone-50/70 transition-colors">
+                          <td className="py-3 font-mono text-[11px] text-neutral-500">{a.id}</td>
                           <td className="py-3">{a.question_count} questions</td>
                           <td className="py-3">
                             <span
                               className={`font-semibold ${
                                 (a.score ?? 0) >= 80
-                                  ? "text-emerald-400"
+                                  ? "text-emerald-700"
                                   : (a.score ?? 0) >= 60
-                                  ? "text-amber-400"
-                                  : "text-rose-400"
+                                  ? "text-amber-700"
+                                  : "text-rose-700"
                               }`}
                             >
                               {a.score ?? 0}%
                             </span>
                           </td>
-                          <td className="py-3 text-slate-400">
+                          <td className="py-3 text-neutral-400">
                             {new Date(a.completed_at || a.started_at).toLocaleString()}
                           </td>
                         </tr>
@@ -486,37 +484,37 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
 
         {/* Tab 4: Activity Log */}
         <TabsContent value="activity" className="space-y-4">
-          <Card className="bg-slate-900/60 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-base text-white flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-400" />
+          <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#E85D24]" />
                 User Activity Stream ({activity.length})
               </CardTitle>
-              <CardDescription className="text-xs text-slate-400">
+              <CardDescription className="text-xs text-neutral-500">
                 Audited user-generated events across materials, assessments, and chat
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5 pt-2">
               {activity.length === 0 ? (
-                <EmptyState title="No Activity" description="No logged activity found for this user." />
+                <div className="py-8 text-center text-xs text-neutral-400">No logged activity found for this user.</div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                   {activity.map((evt) => (
                     <div
                       key={evt.id}
-                      className="p-3 rounded-lg border border-slate-800/80 bg-slate-950/40 flex items-center justify-between"
+                      className="p-3 rounded-lg border border-black/5 bg-[#F5F3EE] flex items-center justify-between text-xs"
                     >
-                      <div className="flex items-center gap-3">
-                        <Badge className="bg-slate-800 text-slate-300 border-slate-700 text-[11px]">
+                      <div className="flex items-center gap-2.5">
+                        <Badge className="bg-stone-100 text-stone-700 border-stone-200 text-[11px]">
                           {eventTypeLabels[evt.event_type] || evt.event_type}
                         </Badge>
                         {evt.payload && (
-                          <span className="text-xs text-slate-400 font-mono">
+                          <span className="text-xs text-neutral-600 font-mono">
                             {JSON.stringify(evt.payload).slice(0, 70)}...
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] text-neutral-400">
                         {new Date(evt.created_at).toLocaleString()}
                       </span>
                     </div>
@@ -529,44 +527,43 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
 
         {/* Tab 5: Recommendations */}
         <TabsContent value="recommendations" className="space-y-4">
-          <Card className="bg-slate-900/60 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-base text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
+          <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-600" />
                 Prescribed Recommendations ({recommendations.length})
               </CardTitle>
-              <CardDescription className="text-xs text-slate-400">
+              <CardDescription className="text-xs text-neutral-500">
                 Adaptive study suggestions generated for this user
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5 pt-2">
               {recommendations.length === 0 ? (
-                <EmptyState
-                  title="No Recommendations"
-                  description="User has no pending recommendations recorded."
-                />
+                <div className="py-8 text-center text-xs text-neutral-400">
+                  User has no pending recommendations recorded.
+                </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {recommendations.map((rec) => (
                     <div
                       key={rec.id}
-                      className="p-4 rounded-lg border border-slate-800/80 bg-slate-950/40 space-y-2"
+                      className="p-4 rounded-lg border border-black/5 bg-[#F5F3EE] space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-xs">
+                          <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-xs">
                             {rec.action_type}
                           </Badge>
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-neutral-600">
                             Project: {rec.projects?.name || rec.project_id}
                           </span>
                         </div>
-                        <Badge variant="outline" className="text-[11px] text-slate-500 border-slate-800">
+                        <Badge variant="outline" className="text-[11px] text-neutral-500 border-black/10 bg-white">
                           Priority {rec.priority}
                         </Badge>
                       </div>
-                      <p className="text-xs text-slate-300">{rec.reasoning}</p>
-                      <div className="text-[11px] text-slate-500">
+                      <p className="text-xs text-neutral-700 leading-relaxed">{rec.reasoning}</p>
+                      <div className="text-[11px] text-neutral-400">
                         Generated {new Date(rec.created_at).toLocaleDateString()}
                       </div>
                     </div>
@@ -579,26 +576,25 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
 
         {/* Tab 6: AI Telemetry (Server-side aggregated) */}
         <TabsContent value="ai" className="space-y-4">
-          <Card className="bg-slate-900/60 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-base text-white flex items-center gap-2">
-                <Bot className="w-4 h-4 text-purple-400" />
+          <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                <Bot className="w-4 h-4 text-[#E85D24]" />
                 AI Usage Telemetry ({aiUsage.totalCalls} Calls)
               </CardTitle>
-              <CardDescription className="text-xs text-slate-400">
+              <CardDescription className="text-xs text-neutral-500">
                 Securely aggregated server-side token usage, latency, and estimated cost
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5 pt-2">
               {aiUsage.logs.length === 0 ? (
-                <EmptyState
-                  title="No AI Usage"
-                  description="This user has not generated any AI operations yet."
-                />
+                <div className="py-8 text-center text-xs text-neutral-400">
+                  This user has not generated any AI operations yet.
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
-                    <thead className="text-slate-400 border-b border-slate-800 pb-2">
+                    <thead className="text-neutral-500 border-b border-black/10 pb-2">
                       <tr>
                         <th className="py-2.5 font-medium">Feature</th>
                         <th className="py-2.5 font-medium">Model</th>
@@ -609,30 +605,30 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
                         <th className="py-2.5 font-medium">Date</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    <tbody className="divide-y divide-black/5 text-[#171717]">
                       {aiUsage.logs.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-800/30">
-                          <td className="py-3 font-semibold text-slate-200">{log.feature}</td>
-                          <td className="py-3 font-mono text-[11px] text-slate-400">{log.model}</td>
-                          <td className="py-3 text-slate-400">{log.latency_ms ?? 0}ms</td>
-                          <td className="py-3 text-slate-400">
+                        <tr key={log.id} className="hover:bg-stone-50/70 transition-colors">
+                          <td className="py-3 font-semibold text-[#171717]">{log.feature}</td>
+                          <td className="py-3 font-mono text-[11px] text-neutral-500">{log.model}</td>
+                          <td className="py-3 text-neutral-500">{log.latency_ms ?? 0}ms</td>
+                          <td className="py-3 text-neutral-500 font-mono text-[11px]">
                             {log.input_tokens ?? 0} / {log.output_tokens ?? 0}
                           </td>
-                          <td className="py-3 font-mono text-amber-400">
+                          <td className="py-3 font-mono text-emerald-600 font-medium">
                             ${Number(log.estimated_cost_usd ?? 0).toFixed(4)}
                           </td>
                           <td className="py-3">
                             <Badge
                               className={`text-[10px] ${
                                 log.status === "success"
-                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                  : "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : "bg-rose-50 text-rose-700 border-rose-200"
                               }`}
                             >
                               {log.status}
                             </Badge>
                           </td>
-                          <td className="py-3 text-slate-400">
+                          <td className="py-3 text-neutral-400 text-[11px]">
                             {new Date(log.created_at).toLocaleString()}
                           </td>
                         </tr>

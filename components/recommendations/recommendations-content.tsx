@@ -108,14 +108,14 @@ export function RecommendationsContent({
   });
 
   const priorityColors = {
-    HIGH: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-    MEDIUM: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    LOW: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+    HIGH: "bg-rose-50 text-rose-700 border-rose-200",
+    MEDIUM: "bg-amber-50 text-amber-700 border-amber-200",
+    LOW: "bg-stone-100 text-stone-700 border-stone-200",
   };
 
   const priorityBadges = {
     HIGH: "High Priority",
-    MEDIUM: "Medium Priority",
+    MEDIUM: "Recommended",
     LOW: "Suggestion",
   };
 
@@ -130,34 +130,32 @@ export function RecommendationsContent({
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/60">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-black/10">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2.5">
-              Study Recommendations
-            </h1>
-            <Badge
-              variant="outline"
-              className="bg-amber-500/10 text-amber-400 border-amber-500/25 text-xs"
-            >
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#E85D24]" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               Adaptive Guidance
-            </Badge>
+            </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#171717] tracking-tight">
+            Study Recommendations
+          </h1>
+          <p className="text-sm text-neutral-500 mt-1 max-w-2xl leading-relaxed">
             Actionable next steps generated from your concept mastery and quiz evaluations.
           </p>
         </div>
 
         {/* Dismissed toggle */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowDismissed(!showDismissed)}
-            className={`border-slate-700 text-xs h-9 ${
+            className={`border-black/10 text-xs h-9 rounded-lg transition-colors ${
               showDismissed
-                ? "bg-slate-800 text-white"
-                : "bg-slate-900/60 text-slate-400 hover:text-white"
+                ? "bg-[#171717] text-white hover:bg-black"
+                : "bg-white text-[#171717] hover:bg-neutral-50"
             }`}
           >
             {showDismissed ? (
@@ -167,7 +165,7 @@ export function RecommendationsContent({
               </>
             ) : (
               <>
-                <Check className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
+                <Check className="h-3.5 w-3.5 mr-1.5 text-neutral-400" />
                 View Completed
               </>
             )}
@@ -176,9 +174,9 @@ export function RecommendationsContent({
       </div>
 
       {/* Filters Bar */}
-      <div className="flex flex-wrap items-center gap-3 bg-slate-900/60 border border-slate-800/80 p-3 rounded-xl">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400 px-1">
-          <Filter className="h-3.5 w-3.5 text-indigo-400" />
+      <div className="flex flex-wrap items-center gap-3 bg-white border border-black/10 p-3.5 rounded-xl shadow-sm">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 px-1">
+          <Filter className="h-3.5 w-3.5 text-[#E85D24]" />
           Filter:
         </div>
 
@@ -186,7 +184,7 @@ export function RecommendationsContent({
         <select
           value={selectedProject}
           onChange={(e) => setSelectedProject(e.target.value)}
-          className="bg-slate-800/80 border border-slate-700/80 text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="bg-[#F5F3EE] border border-black/10 text-xs text-[#171717] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#E85D24]"
         >
           <option value="ALL">All Projects ({projects.length})</option>
           {projects.map((p) => (
@@ -200,38 +198,40 @@ export function RecommendationsContent({
         <select
           value={selectedPriority}
           onChange={(e) => setSelectedPriority(e.target.value)}
-          className="bg-slate-800/80 border border-slate-700/80 text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="bg-[#F5F3EE] border border-black/10 text-xs text-[#171717] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#E85D24]"
         >
           <option value="ALL">All Priorities</option>
           <option value="HIGH">High Priority</option>
-          <option value="MEDIUM">Medium Priority</option>
+          <option value="MEDIUM">Recommended</option>
           <option value="LOW">Suggestions</option>
         </select>
 
-        <div className="ml-auto text-xs text-slate-400">
-          Showing <span className="font-semibold text-white">{filtered.length}</span>{" "}
+        <div className="ml-auto text-xs text-neutral-500">
+          Showing <span className="font-semibold text-[#171717]">{filtered.length}</span>{" "}
           item{filtered.length === 1 ? "" : "s"}
         </div>
       </div>
 
       {/* Recommendations Cards Grid */}
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={Sparkles}
-          title={showDismissed ? "No completed items" : "You're all caught up"}
-          description={
-            showDismissed
+        <div className="bg-white border border-black/10 rounded-xl p-12 text-center shadow-sm my-6">
+          <div className="w-12 h-12 rounded-full bg-[#F5F3EE] border border-black/10 flex items-center justify-center mx-auto mb-4 text-[#E85D24]">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <h3 className="font-serif text-xl text-[#171717] mb-2 font-normal">
+            {showDismissed ? "No completed items" : "You're all caught up"}
+          </h3>
+          <p className="text-xs sm:text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
+            {showDismissed
               ? "Items you complete or dismiss will appear here for historical reference."
-              : "As you complete adaptive quizzes and converse with the AI Tutor, personalized recommendations will automatically populate here."
-          }
-          className="my-12 py-16"
-        >
+              : "As you complete adaptive quizzes and converse with the AI Tutor, personalized recommendations will automatically populate here."}
+          </p>
           {!showDismissed && (
-            <div className="flex justify-center gap-3 pt-4">
+            <div className="flex justify-center gap-3 pt-6">
               <Link href="/quiz">
                 <Button
                   size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8 px-4"
+                  className="bg-[#E85D24] hover:bg-[#d04e1b] text-white text-xs h-8 px-4 rounded-lg shadow-sm font-medium"
                 >
                   <ClipboardCheck className="h-3.5 w-3.5 mr-1.5" />
                   Take a Quiz
@@ -241,7 +241,7 @@ export function RecommendationsContent({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-700 bg-slate-800/80 text-slate-200 text-xs h-8 px-4"
+                  className="border-black/10 bg-white hover:bg-neutral-50 text-[#171717] text-xs h-8 px-4 rounded-lg font-medium"
                 >
                   <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                   Open AI Tutor
@@ -249,7 +249,7 @@ export function RecommendationsContent({
               </Link>
             </div>
           )}
-        </EmptyState>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((rec) => {
@@ -259,11 +259,11 @@ export function RecommendationsContent({
             return (
               <Card
                 key={rec.id}
-                className={`border-slate-800/80 bg-slate-900/60 backdrop-blur-sm transition-all hover:border-slate-700 ${
-                  rec.is_dismissed ? "opacity-60" : ""
+                className={`border-black/10 bg-white shadow-sm transition-all hover:border-black/20 hover:shadow-md rounded-xl ${
+                  rec.is_dismissed ? "opacity-60 bg-stone-50/70" : ""
                 } flex flex-col justify-between`}
               >
-                <CardHeader className="p-5 pb-3 space-y-2.5">
+                <CardHeader className="p-5 pb-3 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge
@@ -276,7 +276,7 @@ export function RecommendationsContent({
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="bg-slate-800/80 text-slate-300 border-slate-700/80 text-[10px]"
+                        className="bg-[#F5F3EE] text-neutral-600 border-black/10 text-[10px]"
                       >
                         {rec.action_type.replace(/_/g, " ")}
                       </Badge>
@@ -287,43 +287,43 @@ export function RecommendationsContent({
                       size="sm"
                       onClick={() => toggleDismiss(rec.id, rec.is_dismissed)}
                       disabled={updatingId === rec.id}
-                      className="h-7 w-7 p-0 text-slate-400 hover:text-white"
+                      className="h-7 w-7 p-0 text-neutral-400 hover:text-[#171717] hover:bg-stone-100 rounded-md"
                       title={rec.is_dismissed ? "Restore" : "Mark as completed"}
                       aria-label={rec.is_dismissed ? "Restore" : "Mark as completed"}
                     >
                       {rec.is_dismissed ? (
                         <RotateCcw className="h-3.5 w-3.5" />
                       ) : (
-                        <CheckCircle2 className="h-4 w-4 hover:text-emerald-400 transition-colors" />
+                        <CheckCircle2 className="h-4 w-4 hover:text-emerald-600 transition-colors" />
                       )}
                     </Button>
                   </div>
 
-                  <CardTitle className="text-sm sm:text-base font-semibold text-white leading-snug">
+                  <CardTitle className="font-serif text-lg sm:text-xl font-normal text-[#171717] leading-snug">
                     {conceptName ? `Strengthen: ${conceptName}` : `Review: ${projectName}`}
                   </CardTitle>
                 </CardHeader>
 
                 <CardContent className="p-5 pt-0 space-y-4">
                   {rec.reasoning && (
-                    <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800/80 text-xs text-slate-300 leading-relaxed">
-                      <span className="font-semibold text-slate-200 block mb-1">
+                    <div className="p-3.5 rounded-lg bg-[#F5F3EE] border-l-2 border-[#E85D24] text-xs text-neutral-700 leading-relaxed">
+                      <span className="font-medium text-[#171717] block mb-1">
                         Why this is recommended:
                       </span>
                       {rec.reasoning}
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/50 text-xs">
-                    <span className="text-slate-400 truncate max-w-[200px]">
-                      Project: <span className="text-slate-300 font-medium">{projectName}</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-black/5 text-xs">
+                    <span className="text-neutral-500 truncate max-w-[200px]">
+                      Project: <span className="text-[#171717] font-medium">{projectName}</span>
                     </span>
 
                     <div className="flex items-center gap-2">
                       <Link href={`/tutor?project=${rec.project_id}`}>
                         <Button
                           size="sm"
-                          className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8 px-3 shadow-sm"
+                          className="bg-[#E85D24] hover:bg-[#d04e1b] text-white text-xs h-8 px-3.5 rounded-lg shadow-sm font-medium"
                         >
                           <MessageSquare className="h-3 w-3 mr-1.5" />
                           Study with Tutor
@@ -333,9 +333,9 @@ export function RecommendationsContent({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs h-8 px-3"
+                          className="border-black/10 bg-white hover:bg-neutral-50 text-[#171717] text-xs h-8 px-3 rounded-lg font-medium"
                         >
-                          <ClipboardCheck className="h-3 w-3 mr-1.5 text-emerald-400" />
+                          <ClipboardCheck className="h-3 w-3 mr-1.5 text-emerald-600" />
                           Quiz
                         </Button>
                       </Link>

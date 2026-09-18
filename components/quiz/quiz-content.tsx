@@ -1,16 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -31,13 +23,9 @@ import {
   ArrowRight,
   Trophy,
   Lightbulb,
-  FileText,
   MessageSquare,
-  HelpCircle,
   Sparkles,
   RotateCcw,
-  BookOpen,
-  Check,
 } from "lucide-react";
 
 interface Question {
@@ -234,159 +222,166 @@ export function QuizContent({
   // ─── View 1: Setup Screen (No Quiz In Progress) ──────────────────────────
   if (questions.length === 0) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-3xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
         <Breadcrumbs items={quizBreadcrumbItems} />
-        <div className="pb-2 border-b border-slate-800/60">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+        <div className="pb-6 border-b hairline">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500">
+              Assessment
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight">
               Adaptive Quiz
             </h1>
-            <Badge
-              variant="outline"
-              className="bg-indigo-500/10 text-indigo-300 border-indigo-500/25 text-xs"
-            >
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-white border border-black/10 text-neutral-600 font-medium">
               Mastery Assessment
-            </Badge>
+            </span>
           </div>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1">
+          <p className="text-sm text-neutral-600 mt-2 font-sans">
             Questions adapt to your mastery score and are strictly grounded in your study documents.
           </p>
         </div>
 
         {quizError && (
-          <Alert className="border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs py-3">
+          <Alert className="border-rose-200 bg-rose-50 text-rose-800 text-xs py-3 rounded-2xl">
             <AlertDescription>{quizError}</AlertDescription>
           </Alert>
         )}
 
-        <Card className="border-slate-800/80 bg-slate-900/60 backdrop-blur-sm shadow-md">
-          <CardContent className="p-6 sm:p-8 text-center space-y-5">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
-              <ClipboardCheck className="h-7 w-7" />
-            </div>
+        <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-10 subtle-shadow text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
+            <ClipboardCheck className="h-7 w-7 text-neutral-700" />
+          </div>
 
-            <div className="space-y-1.5 max-w-md mx-auto">
-              <h3 className="text-lg font-semibold text-white tracking-tight">
-                Prepare Your Assessment
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Select a project and optional study document. The system will generate 5 adaptive questions (multiple-choice & conceptual open-ended) to evaluate your knowledge.
-              </p>
-            </div>
+          <div className="space-y-2 max-w-md mx-auto">
+            <h3 className="display text-2xl sm:text-3xl font-bold text-ink tracking-tight">
+              Prepare Your Assessment
+            </h3>
+            <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed font-sans">
+              Select a project and optional study document. The system generates 5 adaptive questions (multiple-choice & conceptual open-ended) to evaluate your knowledge.
+            </p>
+          </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-lg mx-auto w-full">
-              {/* Project Selector - Preserves Project Name strictly */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-lg mx-auto w-full">
+            {/* Project Selector - Preserves Project Name strictly */}
+            <Select
+              value={selectedProject}
+              onValueChange={(v) => {
+                setSelectedProject(v ?? "");
+                setSelectedMaterial("ALL");
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-60 bg-white border-black/15 text-ink text-xs h-10 rounded-xl">
+                <SelectValue placeholder="Select project">
+                  {(val: string | null) => {
+                    const targetId = val || selectedProject;
+                    if (!targetId) return "Select project";
+                    const p = projects.find((proj) => proj.id === targetId);
+                    return p?.name ?? "Select project";
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl">
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Material Selector - Preserves Material Name strictly */}
+            {projectMaterials.length > 0 && (
               <Select
-                value={selectedProject}
-                onValueChange={(v) => {
-                  setSelectedProject(v ?? "");
-                  setSelectedMaterial("ALL");
-                }}
+                value={selectedMaterial}
+                onValueChange={(v) => setSelectedMaterial(v ?? "ALL")}
               >
-                <SelectTrigger className="w-full sm:w-60 bg-slate-800/60 border-slate-700 text-slate-200 text-xs h-9.5">
-                  <SelectValue placeholder="Select project">
+                <SelectTrigger className="w-full sm:w-56 bg-white border-black/15 text-ink text-xs h-10 rounded-xl">
+                  <SelectValue placeholder="All Materials">
                     {(val: string | null) => {
-                      const targetId = val || selectedProject;
-                      if (!targetId) return "Select project";
-                      const p = projects.find((proj) => proj.id === targetId);
-                      return p?.name ?? "Select project";
+                      const cur = val || selectedMaterial;
+                      if (cur === "ALL") return "All Materials (Combined)";
+                      const m = projectMaterials.find((mat) => mat.id === cur);
+                      return m?.file_name ?? "Select material";
                     }}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
+                <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl">
+                  <SelectItem value="ALL">All Materials (Combined)</SelectItem>
+                  {projectMaterials.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.file_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            )}
 
-              {/* Material Selector - Preserves Material Name strictly */}
-              {projectMaterials.length > 0 && (
-                <Select
-                  value={selectedMaterial}
-                  onValueChange={(v) => setSelectedMaterial(v ?? "ALL")}
-                >
-                  <SelectTrigger className="w-full sm:w-56 bg-slate-800/60 border-slate-700 text-slate-200 text-xs h-9.5">
-                    <SelectValue placeholder="All Materials">
-                      {(val: string | null) => {
-                        const cur = val || selectedMaterial;
-                        if (cur === "ALL") return "All Materials (Combined)";
-                        const m = projectMaterials.find((mat) => mat.id === cur);
-                        return m?.file_name ?? "Select material";
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                    <SelectItem value="ALL">All Materials (Combined)</SelectItem>
-                    {projectMaterials.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.file_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <Button
+              onClick={handleGenerate}
+              disabled={!selectedProject || generating}
+              className="w-full sm:w-auto bg-orange hover:bg-[#D44F19] text-white text-xs font-medium h-10 px-6 shrink-0 rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  Generating Quiz…
+                </>
+              ) : (
+                <>
+                  <Play className="mr-1.5 h-3.5 w-3.5" />
+                  Start Assessment
+                </>
               )}
-
-              <Button
-                onClick={handleGenerate}
-                disabled={!selectedProject || generating}
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium h-9.5 px-5 shrink-0 shadow-sm"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                    Generating Quiz…
-                  </>
-                ) : (
-                  <>
-                    <Play className="mr-1.5 h-3.5 w-3.5" />
-                    Start Assessment
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   // ─── View 2: Quiz Complete (Results & Mastery Review) ─────────────────────
   if (quizComplete) {
-    const passed = (totalScore ?? 0) >= 70;
-
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-3xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
         <Breadcrumbs items={quizBreadcrumbItems} />
-        <div className="pb-2 border-b border-slate-800/60">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+        <div className="pb-6 border-b hairline">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500">
+              Evaluation
+            </span>
+          </div>
+          <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight">
             Assessment Results
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1">
+          <p className="text-sm text-neutral-600 mt-2 font-sans">
             Review your answers, scoring feedback, and concept mastery updates.
           </p>
         </div>
 
-        <Card className="border-slate-800/80 bg-slate-900/60 backdrop-blur-sm shadow-md text-center p-6 sm:p-8 space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/25 text-amber-400 flex items-center justify-center mx-auto shadow-sm">
-            <Trophy className="h-8 w-8" />
+        <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-8 subtle-shadow text-center space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
+            <Trophy className="h-8 w-8 text-orange" />
           </div>
 
           <div className="space-y-1">
-            <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <h3 className="text-4xl sm:text-5xl font-extrabold text-ink tracking-tight font-sans">
               {totalScore !== null ? `${totalScore.toFixed(0)}%` : "Complete"}
             </h3>
-            <p className="text-xs sm:text-sm text-slate-400">
+            <p className="text-xs sm:text-sm text-neutral-500 font-sans">
               {correctCount} of {questions.length} questions correctly answered
             </p>
           </div>
 
-          <Progress
-            value={totalScore ?? 0}
-            className="max-w-xs mx-auto h-2 bg-slate-800"
-          />
+          <div className="max-w-xs mx-auto h-2 rounded-full bg-neutral-100 overflow-hidden">
+            <div
+              className="h-full bg-ink rounded-full transition-all"
+              style={{ width: `${Math.min(100, Math.max(0, totalScore ?? 0))}%` }}
+            />
+          </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
             <Button
@@ -401,84 +396,86 @@ export function QuizContent({
               }}
               variant="outline"
               size="sm"
-              className="border-slate-700 bg-slate-800/80 text-slate-300 hover:text-white text-xs h-9 px-4"
+              className="border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-9 px-4 rounded-xl font-medium shadow-xs cursor-pointer"
             >
-              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5 text-neutral-500" />
               Take Another Quiz
             </Button>
             <Link href="/growth">
               <Button
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-9 px-4 shadow-sm"
+                className="bg-ink hover:bg-neutral-800 text-white text-xs h-9 px-4 rounded-xl font-medium shadow-xs transition-colors cursor-pointer"
               >
                 View Concept Growth &rarr;
               </Button>
             </Link>
           </div>
-        </Card>
+        </div>
 
         {/* Section 4: Loop Closure - Mastery Deltas & Immediate Recommendations */}
         {((completionDeltas && completionDeltas.length > 0) || completionRecommendation) && (
           <div className="space-y-3 pt-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-              Learning Loop Updates
-            </h3>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange" />
+              <h3 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
+                Learning Loop Updates
+              </h3>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Mastery Deltas */}
               {completionDeltas && completionDeltas.length > 0 && (
-                <Card className="border-slate-800/80 bg-slate-900/50 backdrop-blur-sm p-4 space-y-2.5">
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span className="text-xs font-semibold text-slate-300">
+                <div className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink font-sans">
                       Concept Mastery Updated
                     </span>
-                    <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/20">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 border border-black/5 text-neutral-700 font-medium">
                       Live Deltas
-                    </Badge>
+                    </span>
                   </div>
                   <div className="space-y-2">
                     {completionDeltas.map((d) => (
-                      <div key={d.conceptId} className="flex items-center justify-between text-xs py-1 border-b border-slate-800/50 last:border-0">
-                        <span className="font-medium text-slate-200 truncate mr-2">
+                      <div key={d.conceptId} className="flex items-center justify-between text-xs py-1 border-b hairline last:border-0">
+                        <span className="font-medium text-ink truncate mr-2">
                           {d.conceptName || "Concept"}
                         </span>
-                        <div className="flex items-center gap-1.5 font-mono text-[11px] shrink-0">
-                          <span className="text-slate-400">{d.previousScore.toFixed(0)}%</span>
-                          <span className="text-slate-600">&rarr;</span>
-                          <span className={d.scoreDelta >= 0 ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>
+                        <div className="flex items-center gap-1.5 font-sans text-[11px] shrink-0">
+                          <span className="text-neutral-400">{d.previousScore.toFixed(0)}%</span>
+                          <span className="text-neutral-400">&rarr;</span>
+                          <span className={d.scoreDelta >= 0 ? "text-emerald-700 font-semibold" : "text-rose-700 font-semibold"}>
                             {d.newScore.toFixed(0)}%
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-neutral-400">
                             ({d.scoreDelta >= 0 ? `+${d.scoreDelta.toFixed(0)}` : d.scoreDelta.toFixed(0)}%)
                           </span>
                         </div>
                       </div>
                     ))}
                   </div>
-                </Card>
+                </div>
               )}
 
               {/* Immediate New Recommendation */}
               {completionRecommendation && (
-                <Card className="border-amber-500/25 bg-amber-500/5 backdrop-blur-sm p-4 space-y-2.5">
-                  <div className="flex items-center justify-between text-amber-300">
-                    <span className="text-xs font-semibold">
+                <div className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink font-sans">
                       New Study Recommendation
                     </span>
-                    <Badge variant="outline" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-semibold uppercase tracking-wider">
                       {completionRecommendation.priority || "Action"}
-                    </Badge>
+                    </span>
                   </div>
-                  <div className="text-xs text-slate-200 leading-relaxed">
-                    <p className="font-medium text-amber-200/90 mb-1">
+                  <div className="text-xs text-neutral-700 leading-relaxed">
+                    <p className="font-semibold text-ink mb-1 font-sans">
                       {completionRecommendation.action_type === "REVIEW"
                         ? "Review Concept"
                         : completionRecommendation.action_type === "PRACTICE"
                         ? "Practice Questions"
                         : "Follow-up Quiz"}
                     </p>
-                    <p className="text-slate-300 text-[11px]">
+                    <p className="text-neutral-500 text-[11px]">
                       {completionRecommendation.reasoning}
                     </p>
                   </div>
@@ -487,14 +484,14 @@ export function QuizContent({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 text-xs h-7 px-2.5"
+                        className="border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-8 px-3 rounded-xl font-medium cursor-pointer"
                       >
-                        <MessageSquare className="h-3 w-3 mr-1" />
+                        <MessageSquare className="h-3 w-3 mr-1 text-neutral-500" />
                         Ask Tutor About This
                       </Button>
                     </Link>
                   </div>
-                </Card>
+                </div>
               )}
             </div>
           </div>
@@ -502,7 +499,7 @@ export function QuizContent({
 
         {/* Detailed Question Review List */}
         <div className="space-y-3 pt-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
             Answer Review & Rubrics
           </h3>
 
@@ -511,85 +508,82 @@ export function QuizContent({
             const isCorrect = r?.isCorrect;
 
             return (
-              <Card
+              <div
                 key={q.id}
-                className="border-slate-800/80 bg-slate-900/50 backdrop-blur-sm"
+                className="bg-white rounded-2xl border border-black/10 p-5 subtle-shadow space-y-3"
               >
-                <CardContent className="p-4 sm:p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      {isCorrect ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
-                      )}
-                      <div>
-                        <span className="text-[11px] font-semibold text-slate-400 block mb-0.5">
-                          Question {i + 1} • {q.type === "mcq" ? "Multiple Choice" : "Open-Ended"}
-                        </span>
-                        <p className="text-sm font-medium text-white leading-snug">
-                          {q.text}
-                        </p>
-                      </div>
-                    </div>
-
-                    {r && (
-                      <Badge
-                        variant="outline"
-                        className={`shrink-0 text-xs font-semibold ${
-                          isCorrect
-                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                            : "bg-rose-500/15 text-rose-300 border-rose-500/30"
-                        }`}
-                      >
-                        {r.score.toFixed(0)}%
-                      </Badge>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    {isCorrect ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
                     )}
+                    <div>
+                      <span className="text-[11px] font-semibold text-neutral-400 block mb-0.5 uppercase tracking-wider">
+                        Question {i + 1} • {q.type === "mcq" ? "Multiple Choice" : "Open-Ended"}
+                      </span>
+                      <p className="text-sm font-semibold text-ink leading-snug">
+                        {q.text}
+                      </p>
+                    </div>
                   </div>
 
                   {r && (
-                    <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-800 text-xs space-y-2">
-                      <p className="text-slate-300 leading-relaxed">
-                        <span className="font-semibold text-slate-200">Feedback:</span> {r.feedback}
-                      </p>
-
-                      {/* Rubric Details for Open-Ended */}
-                      {r.rubric && (
-                        <div className="pt-2 border-t border-slate-700/50 space-y-1.5 text-[11px]">
-                          {r.rubric.strengths && r.rubric.strengths.length > 0 && (
-                            <p className="text-emerald-300">
-                              <span className="font-semibold text-emerald-400">Strengths:</span>{" "}
-                              {r.rubric.strengths.join(", ")}
-                            </p>
-                          )}
-                          {r.rubric.missingConcepts && r.rubric.missingConcepts.length > 0 && (
-                            <p className="text-amber-300">
-                              <span className="font-semibold text-amber-400">Conceptual Gaps:</span>{" "}
-                              {r.rubric.missingConcepts.join(", ")}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <span
+                      className={`shrink-0 text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                        isCorrect
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                          : "bg-rose-50 text-rose-800 border border-rose-200"
+                      }`}
+                    >
+                      {r.score.toFixed(0)}%
+                    </span>
                   )}
+                </div>
 
-                  {/* Phase 19: High-Value CTA on Wrong Answer */}
-                  {!isCorrect && (
-                    <div className="pt-1 flex items-center justify-end">
-                      <Link href={`/tutor?project=${selectedProject}`}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 px-2.5"
-                        >
-                          <MessageSquare className="h-3 w-3 mr-1 text-indigo-400" />
-                          Ask Tutor about this concept &rarr;
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                {r && (
+                  <div className="p-4 rounded-xl bg-[#F9F8F5] border border-black/5 text-xs space-y-2">
+                    <p className="text-neutral-700 leading-relaxed">
+                      <span className="font-semibold text-ink">Feedback:</span> {r.feedback}
+                    </p>
+
+                    {/* Rubric Details for Open-Ended */}
+                    {r.rubric && (
+                      <div className="pt-2 border-t hairline space-y-1.5 text-[11px]">
+                        {r.rubric.strengths && r.rubric.strengths.length > 0 && (
+                          <p className="text-emerald-800">
+                            <span className="font-semibold">Strengths:</span>{" "}
+                            {r.rubric.strengths.join(", ")}
+                          </p>
+                        )}
+                        {r.rubric.missingConcepts && r.rubric.missingConcepts.length > 0 && (
+                          <p className="text-amber-800">
+                            <span className="font-semibold">Conceptual Gaps:</span>{" "}
+                            {r.rubric.missingConcepts.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Ask Tutor on Wrong Answer */}
+                {!isCorrect && (
+                  <div className="pt-1 flex items-center justify-end">
+                    <Link href={`/tutor?project=${selectedProject}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-orange hover:underline px-2.5 font-medium cursor-pointer"
+                      >
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        Ask Tutor about this concept &rarr;
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
@@ -599,48 +593,44 @@ export function QuizContent({
 
   // ─── View 3: Active Question View ─────────────────────────────────────────
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-3xl mx-auto space-y-6 selection:bg-orange/20 selection:text-orange">
       <Breadcrumbs items={quizBreadcrumbItems} />
       {/* Step Header & Progress Bar */}
-      <div className="space-y-2 pb-2 border-b border-slate-800/60">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-white tracking-wide">
+      <div className="space-y-2 pb-4 border-b hairline">
+        <div className="flex items-center justify-between text-xs font-sans">
+          <span className="font-bold text-ink tracking-wide">
             Question {currentIdx + 1} of {questions.length}
           </span>
-          <span className="text-slate-400">
+          <span className="text-neutral-500">
             {answeredCount} answered • {correctCount} correct
           </span>
         </div>
-        <Progress
-          value={((currentIdx + 1) / questions.length) * 100}
-          className="h-1.5 bg-slate-800"
-        />
+        <div className="h-1.5 w-full rounded-full bg-neutral-200 overflow-hidden">
+          <div
+            className="h-full bg-orange rounded-full transition-all"
+            style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
+          />
+        </div>
       </div>
 
       {quizError && (
-        <Alert className="border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs py-2.5">
+        <Alert className="border-rose-200 bg-rose-50 text-rose-800 text-xs py-2.5 rounded-xl">
           <AlertDescription>{quizError}</AlertDescription>
         </Alert>
       )}
 
       {/* Active Question Card */}
-      <Card className="border-slate-800/80 bg-slate-900/60 backdrop-blur-sm shadow-md">
-        <CardHeader className="p-5 sm:p-6 pb-3 space-y-3">
+      <div className="bg-white rounded-[24px] border border-black/10 p-6 sm:p-8 subtle-shadow space-y-5">
+        <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="bg-slate-800 text-slate-300 border-slate-700 text-[10px] font-medium"
-              >
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#F5F3EE] border border-black/5 text-neutral-700 font-medium">
                 {currentQuestion?.type === "mcq" ? "Multiple Choice" : "Open-Ended"}
-              </Badge>
+              </span>
               {currentQuestion?.difficulty && (
-                <Badge
-                  variant="outline"
-                  className="bg-indigo-500/10 text-indigo-300 border-indigo-500/25 text-[10px]"
-                >
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-orange/10 text-orange border border-orange/20 font-medium">
                   Difficulty: {currentQuestion.difficulty}/5
-                </Badge>
+                </span>
               )}
             </div>
 
@@ -649,30 +639,30 @@ export function QuizContent({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowHint(!showHint)}
-                className="text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 h-7 px-2.5"
+                className="text-xs text-neutral-600 hover:text-ink h-7 px-2.5 rounded-lg cursor-pointer"
               >
-                <Lightbulb className="h-3.5 w-3.5 mr-1" />
+                <Lightbulb className="h-3.5 w-3.5 mr-1 text-orange" />
                 {showHint ? "Hide Hint" : "Hint"}
               </Button>
             )}
           </div>
 
-          <CardTitle className="text-base sm:text-lg font-semibold text-white leading-snug">
+          <h2 className="text-lg sm:text-xl font-bold text-ink leading-snug font-sans">
             {currentQuestion?.text}
-          </CardTitle>
+          </h2>
 
           {showHint && currentQuestion?.hint && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-200 flex items-start gap-2">
-              <Lightbulb className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
-              <span>{currentQuestion.hint}</span>
+            <div className="p-3.5 rounded-xl bg-[#F9F8F5] border border-black/5 text-xs text-neutral-700 flex items-start gap-2">
+              <Lightbulb className="h-4 w-4 shrink-0 text-orange mt-0.5" />
+              <span className="leading-relaxed">{currentQuestion.hint}</span>
             </div>
           )}
-        </CardHeader>
+        </div>
 
-        <CardContent className="p-5 sm:p-6 pt-0 space-y-4">
+        <div className="space-y-4 pt-1">
           {/* Question Input / Option Selector */}
           {currentQuestion?.type === "mcq" && currentQuestion.options ? (
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2.5">
               {currentQuestion.options.map((option, oi) => {
                 const letter = String.fromCharCode(65 + oi);
                 const isSelected =
@@ -686,18 +676,18 @@ export function QuizContent({
                     currentResult?.correctAnswer?.toUpperCase() === letter);
 
                 let optionStyle =
-                  "bg-slate-800/40 border-slate-700/70 text-slate-200 hover:bg-slate-800/80 hover:border-slate-600";
+                  "bg-white border-black/10 text-neutral-800 hover:bg-neutral-50 hover:border-black/20";
 
                 if (isAnswered) {
                   if (isCorrectOption) {
-                    optionStyle = "bg-emerald-500/15 border-emerald-500/40 text-emerald-200 font-medium";
+                    optionStyle = "bg-emerald-50 border-emerald-300 text-emerald-900 font-medium";
                   } else if (isSelected && !currentResult?.isCorrect) {
-                    optionStyle = "bg-rose-500/15 border-rose-500/40 text-rose-200";
+                    optionStyle = "bg-rose-50 border-rose-300 text-rose-900";
                   } else {
-                    optionStyle = "bg-slate-900/40 border-slate-800 text-slate-400";
+                    optionStyle = "bg-[#F9F8F5] border-black/5 text-neutral-400";
                   }
                 } else if (isSelected) {
-                  optionStyle = "bg-indigo-600/20 border-indigo-500 text-white font-medium ring-1 ring-indigo-500/40";
+                  optionStyle = "bg-orange/5 border-orange text-ink font-medium ring-1 ring-orange/30";
                 }
 
                 return (
@@ -705,31 +695,31 @@ export function QuizContent({
                     key={oi}
                     onClick={() => !isAnswered && setAnswer(option)}
                     disabled={isAnswered}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-colors text-xs sm:text-sm flex items-start gap-3 ${optionStyle}`}
+                    className={`w-full text-left p-3.5 rounded-xl border transition-all text-xs sm:text-sm flex items-start gap-3 cursor-pointer ${optionStyle}`}
                   >
                     <span
                       className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
                         isSelected || isCorrectOption
-                          ? "bg-indigo-600 text-white"
-                          : "bg-slate-800 text-slate-400 border border-slate-700"
+                          ? "bg-orange text-white"
+                          : "bg-[#F5F3EE] text-neutral-600 border border-black/5"
                       }`}
                     >
                       {letter}
                     </span>
-                    <span className="flex-1 mt-0.5 leading-relaxed">{option}</span>
+                    <span className="flex-1 mt-0.5 leading-relaxed font-sans">{option}</span>
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className="pt-1">
+            <div>
               <Textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 placeholder="Type your explanation using concepts from your study materials..."
                 rows={5}
                 disabled={!!currentResult}
-                className="bg-slate-800/60 border-slate-700 text-white text-xs sm:text-sm placeholder:text-slate-500 resize-none rounded-xl"
+                className="bg-white border-black/15 text-ink text-xs sm:text-sm placeholder:text-neutral-400 resize-none rounded-xl focus-visible:ring-1 focus-visible:ring-orange focus-visible:border-orange shadow-xs"
               />
             </div>
           )}
@@ -739,44 +729,44 @@ export function QuizContent({
             <div
               className={`rounded-xl p-4 text-xs space-y-2 ${
                 currentResult.isCorrect
-                  ? "bg-emerald-500/10 border border-emerald-500/25 text-emerald-200"
-                  : "bg-rose-500/10 border border-rose-500/25 text-rose-200"
+                  ? "bg-emerald-50 border border-emerald-200 text-emerald-900"
+                  : "bg-rose-50 border border-rose-200 text-rose-900"
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-sm">
+                <span className="font-bold text-sm">
                   {currentResult.isCorrect ? "✓ Correct!" : "✗ Needs Review"}
                 </span>
-                <span className="font-bold text-xs px-2 py-0.5 rounded-full bg-slate-900/60">
+                <span className="font-bold text-xs px-2 py-0.5 rounded-full bg-white border border-black/5">
                   {currentResult.score.toFixed(0)}%
                 </span>
               </div>
-              <p className="text-slate-200 text-xs leading-relaxed">{currentResult.feedback}</p>
+              <p className="text-xs leading-relaxed">{currentResult.feedback}</p>
 
               {currentResult.rubric && (
-                <div className="pt-2 border-t border-slate-700/50 space-y-1 text-[11px]">
+                <div className="pt-2 border-t hairline space-y-1 text-[11px]">
                   {currentResult.rubric.strengths && currentResult.rubric.strengths.length > 0 && (
-                    <p className="text-emerald-300">
-                      <span className="font-semibold text-emerald-400">Strengths:</span>{" "}
+                    <p className="text-emerald-800">
+                      <span className="font-semibold">Strengths:</span>{" "}
                       {currentResult.rubric.strengths.join(", ")}
                     </p>
                   )}
                   {currentResult.rubric.missingConcepts && currentResult.rubric.missingConcepts.length > 0 && (
-                    <p className="text-amber-300">
-                      <span className="font-semibold text-amber-400">Missing Elements:</span>{" "}
+                    <p className="text-amber-800">
+                      <span className="font-semibold">Missing Elements:</span>{" "}
                       {currentResult.rubric.missingConcepts.join(", ")}
                     </p>
                   )}
                 </div>
               )}
 
-              {/* Phase 19: Ask Tutor CTA on Wrong Answer */}
+              {/* Ask Tutor CTA on Wrong Answer */}
               {!currentResult.isCorrect && (
-                <div className="pt-2 flex items-center justify-between border-t border-slate-700/40 text-[11px]">
-                  <span className="text-slate-300">Stuck on this question?</span>
+                <div className="pt-2 flex items-center justify-between border-t hairline text-[11px]">
+                  <span className="text-neutral-600">Stuck on this question?</span>
                   <Link
                     href={`/tutor?project=${selectedProject}`}
-                    className="text-indigo-400 hover:text-indigo-300 font-semibold inline-flex items-center gap-1 transition-colors"
+                    className="text-orange hover:underline font-semibold inline-flex items-center gap-1 transition-colors"
                   >
                     <MessageSquare className="h-3 w-3" />
                     Ask Tutor about this &rarr;
@@ -787,12 +777,12 @@ export function QuizContent({
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t hairline">
             {!currentResult ? (
               <Button
                 onClick={handleSubmitAnswer}
                 disabled={!answer.trim() || submitting}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium h-9.5 px-6 rounded-xl shadow-sm"
+                className="bg-orange hover:bg-[#D44F19] text-white text-xs font-medium h-10 px-6 rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 {submitting ? (
                   <>
@@ -806,15 +796,15 @@ export function QuizContent({
             ) : currentIdx < questions.length - 1 ? (
               <Button
                 onClick={handleNext}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium h-9.5 px-5 rounded-xl shadow-sm"
+                className="bg-ink hover:bg-neutral-800 text-white text-xs font-medium h-10 px-5 rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Next Question
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             ) : null}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

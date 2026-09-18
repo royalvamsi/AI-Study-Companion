@@ -41,17 +41,17 @@ interface GlobalAnalyticsContentProps {
 }
 
 const eventTypeLabels: Record<string, { label: string; color: string }> = {
-  PROJECT_CREATED: { label: "Project Created", color: "bg-blue-500/15 text-blue-300 border-blue-500/30" },
-  MATERIAL_UPLOADED: { label: "Material Uploaded", color: "bg-purple-500/15 text-purple-300 border-purple-500/30" },
-  MATERIAL_PROCESSED: { label: "Material Ready", color: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
-  MATERIAL_FAILED: { label: "Material Failed", color: "bg-rose-500/15 text-rose-300 border-rose-500/30" },
-  CHAT_MESSAGE_SENT: { label: "Tutor Query", color: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30" },
-  ASSESSMENT_STARTED: { label: "Quiz Started", color: "bg-amber-500/15 text-amber-300 border-amber-500/30" },
-  ASSESSMENT_COMPLETED: { label: "Quiz Completed", color: "bg-teal-500/15 text-teal-300 border-teal-500/30" },
-  RECOMMENDATION_DISMISSED: { label: "Recommendation Dismissed", color: "bg-slate-500/15 text-slate-300 border-slate-500/30" },
+  PROJECT_CREATED: { label: "Project Created", color: "bg-stone-100 text-stone-700 border-stone-200" },
+  MATERIAL_UPLOADED: { label: "Material Uploaded", color: "bg-stone-100 text-stone-700 border-stone-200" },
+  MATERIAL_PROCESSED: { label: "Material Ready", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  MATERIAL_FAILED: { label: "Material Failed", color: "bg-rose-50 text-rose-700 border-rose-200" },
+  CHAT_MESSAGE_SENT: { label: "Tutor Query", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  ASSESSMENT_STARTED: { label: "Quiz Started", color: "bg-stone-100 text-stone-700 border-stone-200" },
+  ASSESSMENT_COMPLETED: { label: "Quiz Completed", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  RECOMMENDATION_DISMISSED: { label: "Recommendation Dismissed", color: "bg-stone-100 text-stone-600 border-stone-200" },
 };
 
-const FEATURE_COLORS = ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
+const FEATURE_COLORS = ["#171717", "#E85D24", "#737373", "#a8a29e", "#d97706", "#44403c"];
 
 export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
   const { summary, projectMasteries, activity, assessments, aiUsage } = data;
@@ -84,29 +84,30 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-black/10">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Learning Analytics
-            </h1>
-            <Badge variant="outline" className="border-indigo-500/30 bg-indigo-500/10 text-indigo-400 text-xs">
-              All Projects
-            </Badge>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#E85D24]" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+              Cross-Project Intelligence
+            </span>
           </div>
-          <p className="text-sm text-slate-400 mt-1">
+          <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#171717] tracking-tight">
+            Learning Analytics
+          </h1>
+          <p className="text-sm text-neutral-500 mt-1 max-w-2xl leading-relaxed">
             Aggregated cross-project intelligence: learning activity, assessment performance, mastery progress, and AI telemetry.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Link href="/projects">
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-700 bg-slate-800/80 hover:bg-slate-750 text-slate-200 text-xs h-9 px-3.5"
+              className="border-black/10 bg-white hover:bg-neutral-50 text-[#171717] text-xs h-9 px-3.5 rounded-lg font-medium shadow-sm"
             >
-              <FolderKanban className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
+              <FolderKanban className="h-3.5 w-3.5 mr-1.5 text-[#E85D24]" />
               View Spaces & Projects
             </Button>
           </Link>
@@ -116,58 +117,58 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Projects */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-sm">
-          <CardHeader className="p-4 pb-2">
-            <CardDescription className="text-xs text-slate-400 flex items-center justify-between">
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardHeader className="p-5 pb-2">
+            <CardDescription className="text-xs uppercase tracking-wider text-neutral-500 font-semibold flex items-center justify-between">
               <span>Workspaces</span>
-              <FolderKanban className="h-4 w-4 text-blue-400" />
+              <FolderKanban className="h-4 w-4 text-[#E85D24]" />
             </CardDescription>
-            <CardTitle className="text-2xl font-bold text-white mt-1">
+            <CardTitle className="font-serif text-3xl font-normal text-[#171717] mt-1">
               {summary.totalProjects}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <p className="text-xs text-slate-400">
+          <CardContent className="p-5 pt-0">
+            <p className="text-xs text-neutral-500">
               {summary.totalConceptsAssessed} concepts evaluated across projects
             </p>
           </CardContent>
         </Card>
 
         {/* Overall Mastery */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-sm">
-          <CardHeader className="p-4 pb-2">
-            <CardDescription className="text-xs text-slate-400 flex items-center justify-between">
-              <span>Overall Average Mastery</span>
-              <Brain className="h-4 w-4 text-purple-400" />
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardHeader className="p-5 pb-2">
+            <CardDescription className="text-xs uppercase tracking-wider text-neutral-500 font-semibold flex items-center justify-between">
+              <span>Average Mastery</span>
+              <Brain className="h-4 w-4 text-[#E85D24]" />
             </CardDescription>
-            <CardTitle className="text-2xl font-bold text-white mt-1 flex items-baseline gap-2">
+            <CardTitle className="font-serif text-3xl font-normal text-[#171717] mt-1 flex items-baseline gap-2">
               <span>{summary.overallAverageMastery}%</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 space-y-1.5">
-            <Progress value={summary.overallAverageMastery} className="h-1.5 bg-slate-800" />
-            <p className="text-[11px] text-slate-400">Weighted cross-project average</p>
+          <CardContent className="p-5 pt-0 space-y-2">
+            <Progress value={summary.overallAverageMastery} className="h-1.5 bg-stone-100" />
+            <p className="text-[11px] text-neutral-500">Weighted cross-project average</p>
           </CardContent>
         </Card>
 
         {/* Assessment Performance */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-sm">
-          <CardHeader className="p-4 pb-2">
-            <CardDescription className="text-xs text-slate-400 flex items-center justify-between">
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardHeader className="p-5 pb-2">
+            <CardDescription className="text-xs uppercase tracking-wider text-neutral-500 font-semibold flex items-center justify-between">
               <span>Assessments Completed</span>
-              <ClipboardCheck className="h-4 w-4 text-emerald-400" />
+              <ClipboardCheck className="h-4 w-4 text-emerald-600" />
             </CardDescription>
-            <CardTitle className="text-2xl font-bold text-white mt-1 flex items-baseline gap-2">
+            <CardTitle className="font-serif text-3xl font-normal text-[#171717] mt-1 flex items-baseline gap-2">
               <span>{summary.totalAssessmentsCompleted}</span>
               {summary.totalAssessmentsCompleted > 0 && (
-                <span className="text-xs font-normal text-slate-400">
+                <span className="text-xs font-sans font-normal text-neutral-500">
                   Avg: {summary.overallAverageScore}%
                 </span>
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <p className="text-xs text-slate-400">
+          <CardContent className="p-5 pt-0">
+            <p className="text-xs text-neutral-500">
               {summary.totalAssessmentsCompleted > 0
                 ? `Range: ${assessments.lowestScore}% - ${assessments.highestScore}%`
                 : "No assessments completed yet"}
@@ -176,21 +177,21 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
         </Card>
 
         {/* AI Usage */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-sm">
-          <CardHeader className="p-4 pb-2">
-            <CardDescription className="text-xs text-slate-400 flex items-center justify-between">
-              <span>Total AI Operations</span>
-              <Sparkles className="h-4 w-4 text-amber-400" />
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
+          <CardHeader className="p-5 pb-2">
+            <CardDescription className="text-xs uppercase tracking-wider text-neutral-500 font-semibold flex items-center justify-between">
+              <span>AI Operations</span>
+              <Sparkles className="h-4 w-4 text-amber-600" />
             </CardDescription>
-            <CardTitle className="text-2xl font-bold text-white mt-1 flex items-baseline gap-2">
+            <CardTitle className="font-serif text-3xl font-normal text-[#171717] mt-1 flex items-baseline gap-2">
               <span>{aiUsage.totalCalls}</span>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/30 text-amber-300">
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-200 bg-amber-50 text-amber-700 font-sans">
                 ${aiUsage.totalCostUsd.toFixed(4)}
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <p className="text-xs text-slate-400">
+          <CardContent className="p-5 pt-0">
+            <p className="text-xs text-neutral-500">
               {aiUsage.totalTokens.toLocaleString()} total tokens · {aiUsage.successRate}% success
             </p>
           </CardContent>
@@ -198,19 +199,19 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
       </div>
 
       {/* Projects Overview Grid */}
-      <Card className="bg-slate-900/60 border-slate-800/80">
+      <Card className="bg-white border-black/10 shadow-sm rounded-xl">
         <CardHeader className="p-5 pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
-                <FolderKanban className="h-4 w-4 text-indigo-400" />
+              <CardTitle className="font-serif text-xl font-normal text-[#171717] flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-[#E85D24]" />
                 Mastery & Progress by Project
               </CardTitle>
-              <CardDescription className="text-xs text-slate-400 mt-0.5">
+              <CardDescription className="text-xs text-neutral-500 mt-0.5">
                 Overview of mastery levels and assessments completed across each project
               </CardDescription>
             </div>
-            <Badge variant="outline" className="text-xs text-slate-400 border-slate-700">
+            <Badge variant="outline" className="text-xs text-neutral-600 border-black/10 bg-[#F5F3EE]">
               {projectMasteries.length} Projects
             </Badge>
           </div>
@@ -221,33 +222,33 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
               {projectMasteries.map((p) => (
                 <div
                   key={p.projectId}
-                  className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 hover:border-slate-700 transition-colors flex flex-col justify-between space-y-3"
+                  className="p-4 rounded-xl border border-black/10 bg-[#F5F3EE] hover:border-black/20 transition-all flex flex-col justify-between space-y-3"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-semibold text-slate-200 truncate">{p.projectName}</h3>
-                      <Badge variant="outline" className="text-[10px] shrink-0 border-indigo-500/30 text-indigo-300">
+                      <h3 className="text-sm font-semibold text-[#171717] truncate">{p.projectName}</h3>
+                      <Badge variant="outline" className="text-[10px] shrink-0 border-black/10 bg-white text-[#171717] font-medium">
                         {p.averageMastery}% Mastery
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-neutral-500 mt-1">
                       {p.conceptCount} concepts tracked · {p.completedAssessments} quizzes completed
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Progress value={p.averageMastery} className="h-1.5 bg-slate-800" />
+                    <Progress value={p.averageMastery} className="h-1.5 bg-stone-200" />
                     <div className="flex items-center justify-between pt-1">
                       <Link
                         href={`/projects/${p.projectId}/analytics`}
-                        className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        className="text-[11px] text-[#E85D24] hover:text-[#d04e1b] font-medium flex items-center gap-1"
                       >
                         <BarChart3 className="h-3 w-3" />
                         Project Analytics
                       </Link>
                       <Link
                         href={`/projects/${p.projectId}`}
-                        className="text-[11px] text-slate-400 hover:text-slate-300 flex items-center gap-1"
+                        className="text-[11px] text-neutral-500 hover:text-[#171717] flex items-center gap-1"
                       >
                         View Project
                         <ArrowRight className="h-3 w-3" />
@@ -258,7 +259,7 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
               ))}
             </div>
           ) : (
-            <div className="py-10 text-center text-slate-400 text-xs">
+            <div className="py-10 text-center text-neutral-500 text-xs">
               No projects created yet.
             </div>
           )}
@@ -268,13 +269,13 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
       {/* Two Columns: Score Trend & AI Telemetry */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cross-Project Assessment Trend */}
-        <Card className="bg-slate-900/60 border-slate-800/80">
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
           <CardHeader className="p-5 pb-2">
-            <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-emerald-400" />
+            <CardTitle className="font-serif text-xl font-normal text-[#171717] flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
               Cross-Project Assessment Scores
             </CardTitle>
-            <CardDescription className="text-xs text-slate-400">
+            <CardDescription className="text-xs text-neutral-500">
               Historical progression of quiz completion scores across all workspaces
             </CardDescription>
           </CardHeader>
@@ -283,25 +284,27 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
               <div className="h-60 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
                     <XAxis
                       dataKey="date"
-                      stroke="#64748b"
+                      stroke="#737373"
                       fontSize={11}
                       tickLine={false}
                     />
                     <YAxis
                       domain={[0, 100]}
-                      stroke="#64748b"
+                      stroke="#737373"
                       fontSize={11}
                       tickLine={false}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#0f172a",
-                        borderColor: "#334155",
+                        backgroundColor: "#FFFFFF",
+                        borderColor: "rgba(0,0,0,0.1)",
                         borderRadius: "8px",
                         fontSize: "12px",
+                        color: "#171717",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                       }}
                       formatter={(val: any) => [`${val}%`, "Score"]}
                       labelFormatter={(label, payload) => {
@@ -312,17 +315,17 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
                     <Line
                       type="monotone"
                       dataKey="score"
-                      stroke="#10b981"
+                      stroke="#E85D24"
                       strokeWidth={2.5}
-                      dot={{ r: 4, fill: "#10b981" }}
+                      dot={{ r: 4, fill: "#E85D24" }}
                       activeDot={{ r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-60 flex flex-col items-center justify-center text-slate-400 text-xs">
-                <ClipboardCheck className="h-8 w-8 text-slate-600 mb-2" />
+              <div className="h-60 flex flex-col items-center justify-center text-neutral-400 text-xs">
+                <ClipboardCheck className="h-8 w-8 text-neutral-300 mb-2" />
                 No quiz assessments completed yet.
               </div>
             )}
@@ -330,13 +333,13 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
         </Card>
 
         {/* Cross-Project AI Telemetry Breakdown */}
-        <Card className="bg-slate-900/60 border-slate-800/80">
+        <Card className="bg-white border-black/10 shadow-sm rounded-xl">
           <CardHeader className="p-5 pb-2">
-            <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
-              <Cpu className="h-4 w-4 text-amber-400" />
+            <CardTitle className="font-serif text-xl font-normal text-[#171717] flex items-center gap-2">
+              <Cpu className="h-4 w-4 text-amber-600" />
               AI Activity & Feature Telemetry
             </CardTitle>
-            <CardDescription className="text-xs text-slate-400">
+            <CardDescription className="text-xs text-neutral-500">
               Aggregated AI model operations across Tutor, Quizzes, Recommendations, and Extraction
             </CardDescription>
           </CardHeader>
@@ -346,15 +349,17 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
                 <div className="h-44 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={featureChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
-                      <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                      <XAxis dataKey="name" stroke="#737373" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#737373" fontSize={11} tickLine={false} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#0f172a",
-                          borderColor: "#334155",
+                          backgroundColor: "#FFFFFF",
+                          borderColor: "rgba(0,0,0,0.1)",
                           borderRadius: "8px",
                           fontSize: "12px",
+                          color: "#171717",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                         }}
                         formatter={(val: any, name: any, item: any) => [
                           `${val} calls (${item.payload.cost ? `$${item.payload.cost.toFixed(4)}` : "$0.00"})`,
@@ -371,30 +376,30 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
                 </div>
 
                 {/* Subtext metrics */}
-                <div className="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-800">
-                  <div className="p-2 rounded bg-slate-800/30">
-                    <span className="text-[10px] text-slate-400 block">Total Cost</span>
-                    <span className="text-xs font-semibold text-slate-200">
+                <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-black/5">
+                  <div className="p-2.5 rounded-lg bg-[#F5F3EE]">
+                    <span className="text-[10px] text-neutral-500 block">Total Cost</span>
+                    <span className="text-xs font-semibold text-[#171717]">
                       ${aiUsage.totalCostUsd.toFixed(4)}
                     </span>
                   </div>
-                  <div className="p-2 rounded bg-slate-800/30">
-                    <span className="text-[10px] text-slate-400 block">Avg Latency</span>
-                    <span className="text-xs font-semibold text-slate-200">
+                  <div className="p-2.5 rounded-lg bg-[#F5F3EE]">
+                    <span className="text-[10px] text-neutral-500 block">Avg Latency</span>
+                    <span className="text-xs font-semibold text-[#171717]">
                       {aiUsage.averageLatencyMs}ms
                     </span>
                   </div>
-                  <div className="p-2 rounded bg-slate-800/30">
-                    <span className="text-[10px] text-slate-400 block">Success Rate</span>
-                    <span className="text-xs font-semibold text-emerald-400">
+                  <div className="p-2.5 rounded-lg bg-[#F5F3EE]">
+                    <span className="text-[10px] text-neutral-500 block">Success Rate</span>
+                    <span className="text-xs font-semibold text-emerald-600">
                       {aiUsage.successRate}%
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="h-60 flex flex-col items-center justify-center text-slate-400 text-xs">
-                <Sparkles className="h-8 w-8 text-slate-600 mb-2" />
+              <div className="h-60 flex flex-col items-center justify-center text-neutral-400 text-xs">
+                <Sparkles className="h-8 w-8 text-neutral-300 mb-2" />
                 No AI usage recorded yet.
               </div>
             )}
@@ -403,28 +408,28 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
       </div>
 
       {/* Global Activity Feed */}
-      <Card className="bg-slate-900/60 border-slate-800/80">
+      <Card className="bg-white border-black/10 shadow-sm rounded-xl">
         <CardHeader className="p-5 pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
-              <Activity className="h-4 w-4 text-blue-400" />
+            <CardTitle className="font-serif text-xl font-normal text-[#171717] flex items-center gap-2">
+              <Activity className="h-4 w-4 text-[#E85D24]" />
               Recent Cross-Project Activity
             </CardTitle>
-            <Badge variant="outline" className="text-xs text-slate-400 border-slate-700">
+            <Badge variant="outline" className="text-xs text-neutral-600 border-black/10 bg-[#F5F3EE]">
               {activity.recentEvents.length} Recent Events
             </Badge>
           </div>
-          <CardDescription className="text-xs text-slate-400">
+          <CardDescription className="text-xs text-neutral-500">
             Real-time audit log of learning events across all user spaces and projects
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-5 pt-2">
+        <CardContent className="p-5 pt-3">
           {activity.recentEvents.length > 0 ? (
             <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
               {activity.recentEvents.map((ev) => {
                 const cfg = eventTypeLabels[ev.eventType] || {
                   label: ev.eventType.replace(/_/g, " "),
-                  color: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+                  color: "bg-stone-100 text-stone-700 border-stone-200",
                 };
                 const timeStr = new Date(ev.createdAt).toLocaleString(undefined, {
                   month: "short",
@@ -436,25 +441,25 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
                 return (
                   <div
                     key={ev.id}
-                    className="flex items-center justify-between py-2 px-3 rounded-md bg-slate-800/40 border border-slate-800/60 text-xs"
+                    className="flex items-center justify-between py-2.5 px-3.5 rounded-lg bg-[#F5F3EE] border border-black/5 text-xs"
                   >
                     <div className="flex items-center gap-2.5 truncate max-w-[420px]">
                       <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${cfg.color}`}>
                         {cfg.label}
                       </Badge>
                       {ev.projectName && (
-                        <span className="text-indigo-300 font-medium truncate text-xs">
+                        <span className="text-[#171717] font-medium truncate text-xs">
                           [{ev.projectName}]
                         </span>
                       )}
                       {typeof ev.payload?.fileName === "string" && (
-                        <span className="text-slate-300 truncate">{ev.payload.fileName}</span>
+                        <span className="text-neutral-600 truncate">{ev.payload.fileName}</span>
                       )}
                       {typeof ev.payload?.actionType === "string" && (
-                        <span className="text-slate-400 truncate">{ev.payload.actionType}</span>
+                        <span className="text-neutral-500 truncate">{ev.payload.actionType}</span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-500 shrink-0 flex items-center gap-1">
+                    <span className="text-[11px] text-neutral-400 shrink-0 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {timeStr}
                     </span>
@@ -463,8 +468,8 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
               })}
             </div>
           ) : (
-            <div className="py-12 text-center text-slate-400 text-xs">
-              <Activity className="h-8 w-8 mx-auto text-slate-600 mb-2" />
+            <div className="py-12 text-center text-neutral-400 text-xs">
+              <Activity className="h-8 w-8 mx-auto text-neutral-300 mb-2" />
               No activity logged yet across projects.
             </div>
           )}
