@@ -127,8 +127,8 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
       <div className="flex flex-col gap-4">
         <Breadcrumbs
           items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Admin Operations", href: "/admin" },
+            { label: "Platform Administration", href: "/admin" },
+            { label: "Users & Spaces", href: "/admin?tab=users" },
             { label: user.displayName },
           ]}
         />

@@ -53,6 +53,8 @@ export async function middleware(request: NextRequest) {
     pathname !== "/" &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/signup") &&
+    !pathname.startsWith("/forgot-password") &&
+    !pathname.startsWith("/reset-password") &&
     !pathname.startsWith("/auth")
   ) {
     const url = request.nextUrl.clone();
@@ -60,26 +62,46 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin route protection — check is_admin flag
-  if (user && pathname.startsWith("/admin")) {
+  // Admin vs Learner route separation & auth page redirects
+  if (user) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single();
 
-    if (!profile?.is_admin) {
+    const isAdmin = Boolean(profile?.is_admin);
+
+    // Non-admin attempting to access /admin -> redirect to /dashboard
+    if (pathname.startsWith("/admin") && !isAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
-  }
 
-  // Redirect authenticated users away from auth pages
-  if (user && (pathname === "/login" || pathname === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    // Admin accounts are admin-only: redirect learner routes to /admin
+    const isLearnerRoute =
+      pathname === "/dashboard" ||
+      pathname.startsWith("/projects") ||
+      pathname.startsWith("/tutor") ||
+      pathname.startsWith("/quiz") ||
+      pathname.startsWith("/growth") ||
+      pathname.startsWith("/analytics") ||
+      pathname.startsWith("/recommendations");
+
+    if (isAdmin && isLearnerRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+
+    // Redirect authenticated users away from auth pages
+    // Note: /reset-password must remain accessible because recovery links establish an authenticated session
+    if (pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password") {
+      const url = request.nextUrl.clone();
+      url.pathname = isAdmin ? "/admin" : "/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

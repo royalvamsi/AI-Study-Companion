@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,8 @@ import {
   Filter,
   Eye,
   RefreshCw,
+  Zap,
+  HeartPulse,
 } from "lucide-react";
 import type { AdminPlatformStats } from "@/lib/admin/admin-queries";
 
@@ -68,7 +70,35 @@ export function AdminContent({
 }: AdminContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState("overview");
+  const tabParam = searchParams.get("tab");
+  const validTabs = [
+    "overview",
+    "users",
+    "projects",
+    "activity",
+    "learning-analytics",
+    "ai-usage",
+    "background",
+    "system-health",
+  ];
+  const [activeTab, setActiveTab] = useState(
+    tabParam && validTabs.includes(tabParam) ? tabParam : "overview"
+  );
+
+  useEffect(() => {
+    if (tabParam && validTabs.includes(tabParam)) {
+      setActiveTab(tabParam);
+    } else if (!tabParam) {
+      setActiveTab("overview");
+    }
+  }, [tabParam]);
+
+  function handleTabChange(value: string) {
+    setActiveTab(value);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+    router.push(`/admin?${params.toString()}`, { scroll: false });
+  }
 
   // Activity filters local state (Section D: User, Space, Project, Type, Period)
   const [filterUser, setFilterUser] = useState(currentFilters.userId || "ALL");
@@ -112,6 +142,7 @@ export function AdminContent({
     } else {
       params.delete("period");
     }
+    params.set("tab", "activity");
     params.delete("offset"); // Reset pagination on filter change
     router.push(`/admin?${params.toString()}`);
   }
@@ -122,16 +153,20 @@ export function AdminContent({
     setFilterProject("ALL");
     setFilterType("ALL");
     setFilterPeriod("all");
-    router.push("/admin");
+    router.push("/admin?tab=activity");
   }
+
+  const recordedModels = Array.from(
+    new Set(stats.aiUsage.recentLogs.map((l) => l.model).filter(Boolean))
+  );
 
   return (
     <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
-      {/* Breadcrumb Navigation */}
+      {/* Breadcrumb Navigation — Admin accounts remain entirely in administration */}
       <Breadcrumbs
         items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Admin Operations" },
+          { label: "Platform Administration" },
+          { label: "Operations & Intelligence" },
         ]}
       />
 
@@ -167,7 +202,7 @@ export function AdminContent({
             variant="outline"
             size="sm"
             onClick={() => router.refresh()}
-            className="border-black/10 bg-white hover:bg-neutral-50 text-[#171717] text-xs h-9 px-3.5 rounded-lg font-medium shadow-sm"
+            className="border-black/10 bg-white hover:bg-neutral-50 text-[#171717] text-xs h-9 px-3.5 rounded-lg font-medium shadow-xs cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-neutral-500" />
             Refresh Telemetry
@@ -178,7 +213,7 @@ export function AdminContent({
       {/* Primary Platform KPI Grid (B1, B6) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Total Users */}
-        <Card className="border-black/10 bg-white shadow-sm rounded-xl">
+        <Card className="border-black/10 bg-white shadow-xs rounded-xl">
           <CardContent className="p-4 space-y-1">
             <div className="flex items-center justify-between text-neutral-500">
               <span className="text-xs uppercase tracking-wider font-semibold">Total Users</span>
@@ -190,7 +225,7 @@ export function AdminContent({
         </Card>
 
         {/* Spaces & Projects */}
-        <Card className="border-black/10 bg-white shadow-sm rounded-xl">
+        <Card className="border-black/10 bg-white shadow-xs rounded-xl">
           <CardContent className="p-4 space-y-1">
             <div className="flex items-center justify-between text-neutral-500">
               <span className="text-xs uppercase tracking-wider font-semibold">Projects</span>
@@ -202,7 +237,7 @@ export function AdminContent({
         </Card>
 
         {/* Learning Assessments */}
-        <Card className="border-black/10 bg-white shadow-sm rounded-xl">
+        <Card className="border-black/10 bg-white shadow-xs rounded-xl">
           <CardContent className="p-4 space-y-1">
             <div className="flex items-center justify-between text-neutral-500">
               <span className="text-xs uppercase tracking-wider font-semibold">Assessments</span>
@@ -211,12 +246,16 @@ export function AdminContent({
             <div className="font-serif text-2xl font-normal text-[#171717] tracking-tight">
               {stats.learningAnalytics.totalAssessmentsCompleted}
             </div>
-            <div className="text-[11px] text-neutral-500">Avg score: {stats.learningAnalytics.averageScore}%</div>
+            <div className="text-[11px] text-neutral-500">
+              {stats.learningAnalytics.totalAssessmentsCompleted > 0
+                ? `Avg score: ${stats.learningAnalytics.averageScore}%`
+                : "No assessments yet"}
+            </div>
           </CardContent>
         </Card>
 
         {/* Materials Status */}
-        <Card className="border-black/10 bg-white shadow-sm rounded-xl">
+        <Card className="border-black/10 bg-white shadow-xs rounded-xl">
           <CardContent className="p-4 space-y-1">
             <div className="flex items-center justify-between text-neutral-500">
               <span className="text-xs uppercase tracking-wider font-semibold">Materials</span>
@@ -226,28 +265,38 @@ export function AdminContent({
               {stats.backgroundProcessing.materialsTotal}
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
-              <span className="text-emerald-600">{stats.backgroundProcessing.materialsReady} ready</span>
-              {stats.backgroundProcessing.materialsFailed > 0 && (
-                <span className="text-rose-600">· {stats.backgroundProcessing.materialsFailed} failed</span>
+              {stats.backgroundProcessing.materialsTotal > 0 ? (
+                <>
+                  <span className="text-emerald-600">{stats.backgroundProcessing.materialsReady} ready</span>
+                  {stats.backgroundProcessing.materialsFailed > 0 && (
+                    <span className="text-rose-600">· {stats.backgroundProcessing.materialsFailed} failed</span>
+                  )}
+                </>
+              ) : (
+                <span>No materials uploaded</span>
               )}
             </div>
           </CardContent>
         </Card>
 
         {/* AI Invocations */}
-        <Card className="border-black/10 bg-white shadow-sm rounded-xl">
+        <Card className="border-black/10 bg-white shadow-xs rounded-xl">
           <CardContent className="p-4 space-y-1">
             <div className="flex items-center justify-between text-neutral-500">
               <span className="text-xs uppercase tracking-wider font-semibold">AI Calls</span>
               <Bot className="h-4 w-4 text-amber-600" />
             </div>
             <div className="font-serif text-2xl font-normal text-[#171717] tracking-tight">{stats.aiUsage.totalCalls}</div>
-            <div className="text-[11px] text-neutral-500">{stats.aiUsage.successRate}% success rate</div>
+            <div className="text-[11px] text-neutral-500">
+              {stats.aiUsage.totalCalls > 0
+                ? `${stats.aiUsage.successRate}% success rate`
+                : "No AI calls recorded"}
+            </div>
           </CardContent>
         </Card>
 
         {/* AI Spend */}
-        <Card className="border-black/10 bg-white shadow-sm rounded-xl">
+        <Card className="border-black/10 bg-white shadow-xs rounded-xl">
           <CardContent className="p-4 space-y-1">
             <div className="flex items-center justify-between text-neutral-500">
               <span className="text-xs uppercase tracking-wider font-semibold">Total Spend</span>
@@ -262,13 +311,13 @@ export function AdminContent({
       </div>
 
       {/* Main Administrative Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-stone-200/60 border border-black/10 p-1 flex-wrap rounded-lg">
           <TabsTrigger
             value="overview"
             className="text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors"
           >
-            <Activity className="h-3.5 w-3.5 mr-1.5" />
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
             Overview & Health
           </TabsTrigger>
           <TabsTrigger
@@ -279,11 +328,25 @@ export function AdminContent({
             Users & Spaces ({stats.users.total})
           </TabsTrigger>
           <TabsTrigger
+            value="projects"
+            className="text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors"
+          >
+            <FolderKanban className="h-3.5 w-3.5 mr-1.5" />
+            Projects ({stats.projects.total})
+          </TabsTrigger>
+          <TabsTrigger
             value="activity"
             className="text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors"
           >
             <Filter className="h-3.5 w-3.5 mr-1.5" />
             Platform Activity ({totalFilteredActivity})
+          </TabsTrigger>
+          <TabsTrigger
+            value="learning-analytics"
+            className="text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors"
+          >
+            <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+            Learning Analytics
           </TabsTrigger>
           <TabsTrigger
             value="ai-usage"
@@ -299,127 +362,204 @@ export function AdminContent({
             <Server className="h-3.5 w-3.5 mr-1.5" />
             Background Jobs & Failures
           </TabsTrigger>
+          <TabsTrigger
+            value="system-health"
+            className="text-xs rounded-md data-[state=active]:bg-[#171717] data-[state=active]:text-white transition-colors"
+          >
+            <HeartPulse className="h-3.5 w-3.5 mr-1.5" />
+            System Health
+            <Badge
+              variant="outline"
+              className={`ml-1.5 text-[9px] px-1.5 py-0 border uppercase font-semibold ${
+                stats.systemHealth.status === "DEGRADED"
+                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              }`}
+            >
+              {stats.systemHealth.status}
+            </Badge>
+          </TabsTrigger>
         </TabsList>
 
-        {/* TAB 1: OVERVIEW, ENGAGEMENT, LEARNING, AI EVALUATION & HEALTH */}
+        {/* TAB 1: OVERVIEW & HEALTH (Reference Image Composition) */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Learning Analytics & Mastery Trends (B7) */}
-            <Card className="border-black/10 bg-white shadow-sm rounded-xl">
-              <CardHeader className="p-5 pb-2">
-                <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-emerald-600" />
-                  Platform Learning Trends
-                </CardTitle>
-                <CardDescription className="text-xs text-neutral-500">
-                  Aggregated student concept mastery distributions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-5 pt-2 space-y-3">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
-                    <span className="text-sm font-bold text-emerald-700 block">
-                      {stats.learningAnalytics.masteryDistribution.improving}
-                    </span>
-                    <span className="text-[10px] text-neutral-500">Improving</span>
+            {/* Platform Learning Trends */}
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl flex flex-col justify-between">
+              <div>
+                <CardHeader className="p-5 pb-2">
+                  <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    Platform Learning Trends
+                  </CardTitle>
+                  <CardDescription className="text-xs text-neutral-500">
+                    Aggregated student concept mastery distributions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-2 space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+                      <span className="text-sm font-bold text-emerald-700 block">
+                        {stats.learningAnalytics.masteryDistribution.improving}
+                      </span>
+                      <span className="text-[10px] text-neutral-500">Improving</span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-stone-100 border border-stone-200">
+                      <span className="text-sm font-bold text-[#171717] block">
+                        {stats.learningAnalytics.masteryDistribution.stable}
+                      </span>
+                      <span className="text-[10px] text-neutral-500">Stable</span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200">
+                      <span className="text-sm font-bold text-rose-700 block">
+                        {stats.learningAnalytics.masteryDistribution.needsAttention}
+                      </span>
+                      <span className="text-[10px] text-neutral-500">Needs Focus</span>
+                    </div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-stone-100 border border-stone-200">
-                    <span className="text-sm font-bold text-[#171717] block">
-                      {stats.learningAnalytics.masteryDistribution.stable}
-                    </span>
-                    <span className="text-[10px] text-neutral-500">Stable</span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200">
-                    <span className="text-sm font-bold text-rose-700 block">
-                      {stats.learningAnalytics.masteryDistribution.needsAttention}
-                    </span>
-                    <span className="text-[10px] text-neutral-500">Needs Focus</span>
-                  </div>
-                </div>
-                <p className="text-xs text-neutral-500 pt-1">
-                  Across {stats.learningAnalytics.totalConceptsAssessed} tracked concept mastery instances.
-                </p>
-              </CardContent>
+                  <p className="text-xs text-neutral-500 pt-1">
+                    Across {stats.learningAnalytics.totalConceptsAssessed} tracked concept mastery instances.
+                  </p>
+                </CardContent>
+              </div>
+              <div className="p-5 pt-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleTabChange("learning-analytics")}
+                  className="w-full text-xs text-[#E85D24] hover:text-[#d04e1b] hover:bg-[#E85D24]/10 h-8 font-medium justify-between px-2 cursor-pointer"
+                >
+                  <span>Explore Learning Analytics</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </Card>
 
-            {/* AI Evaluation Status (B9) */}
-            <Card className="border-black/10 bg-white shadow-sm rounded-xl">
-              <CardHeader className="p-5 pb-2">
-                <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-600" />
-                  AI Evaluation Architecture
-                </CardTitle>
-                <CardDescription className="text-xs text-neutral-500">
-                  Current status of model benchmarking and evaluation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-5 pt-2 space-y-2 text-xs">
-                <div className="p-3.5 rounded-lg bg-[#F5F3EE] border border-black/5 text-[#171717] space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#171717]">Automated LLM Evaluation:</span>
-                    <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
-                      Not Configured
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-neutral-500 leading-relaxed">
-                    Automated model-level benchmarking (e.g. RAG faithfulness or LLM-as-a-judge) is not implemented in the current backend schema.
-                  </p>
-                </div>
-                <div className="p-3.5 rounded-lg bg-[#F5F3EE] border border-black/5 text-[#171717]">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#171717]">Student Rubric Evaluation:</span>
+            {/* AI Evaluation Status */}
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl flex flex-col justify-between">
+              <div>
+                <CardHeader className="p-5 pb-2">
+                  <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-600" />
+                    AI Evaluation Capabilities
+                  </CardTitle>
+                  <CardDescription className="text-xs text-neutral-500">
+                    Operational evaluation and benchmark status
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-2 space-y-2 text-xs">
+                  {/* Assessment Evaluation */}
+                  <div className="p-2.5 rounded-lg bg-[#F5F3EE] border border-black/5 flex items-center justify-between">
+                    <div>
+                      <span className="font-medium text-[#171717] block">Assessment Evaluation</span>
+                      <span className="text-[10px] text-neutral-500">Structured rubric scoring (Zod schema)</span>
+                    </div>
                     <Badge variant="outline" className="text-[10px] border-emerald-200 bg-emerald-50 text-emerald-700">
                       Active
                     </Badge>
                   </div>
-                  <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">
-                    Automated rubric scoring on open-ended student quiz answers operates in real-time.
-                  </p>
+
+                  {/* Tutor Evaluation */}
+                  <div className="p-2.5 rounded-lg bg-[#F5F3EE] border border-black/5 flex items-center justify-between">
+                    <div>
+                      <span className="font-medium text-[#171717] block">Tutor Evaluation</span>
+                      <span className="text-[10px] text-neutral-500">Automated Socratic benchmarking</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
+                      Not Configured
+                    </Badge>
+                  </div>
+
+                  {/* Retrieval Evaluation */}
+                  <div className="p-2.5 rounded-lg bg-[#F5F3EE] border border-black/5 flex items-center justify-between">
+                    <div>
+                      <span className="font-medium text-[#171717] block">Retrieval Evaluation</span>
+                      <span className="text-[10px] text-neutral-500">Ground truth context faithfulness</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
+                      Not Configured
+                    </Badge>
+                  </div>
+
+                  {/* Recommendation Evaluation */}
+                  <div className="p-2.5 rounded-lg bg-[#F5F3EE] border border-black/5 flex items-center justify-between">
+                    <div>
+                      <span className="font-medium text-[#171717] block">Recommendation Evaluation</span>
+                      <span className="text-[10px] text-neutral-500">Deterministic mastery heuristic engine</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-stone-200 bg-stone-100 text-stone-700">
+                      Deterministic
+                    </Badge>
+                  </div>
+                </CardContent>
+              </div>
+              <div className="p-5 pt-0">
+                <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-2 border-t border-black/5">
+                  <span>Provider: Google Gemini</span>
+                  <span>
+                    Avg Latency:{" "}
+                    {stats.aiUsage.totalCalls > 0 && stats.aiUsage.averageLatencyMs > 0
+                      ? `${stats.aiUsage.averageLatencyMs}ms`
+                      : "No calls recorded"}
+                  </span>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            {/* System Health (B11) */}
-            <Card className="border-black/10 bg-white shadow-sm rounded-xl">
-              <CardHeader className="p-5 pb-2">
-                <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
-                  <Server className="h-4 w-4 text-[#E85D24]" />
-                  Application-Level Health
-                </CardTitle>
-                <CardDescription className="text-xs text-neutral-500">
-                  Application metrics, failure rates, and background health
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-5 pt-2 space-y-2.5 text-xs">
-                <div className="flex items-center justify-between py-1.5 border-b border-black/5">
-                  <span className="text-neutral-500">Operational Status:</span>
-                  <Badge
-                    variant="outline"
-                    className={
-                      stats.systemHealth.status === "HEALTHY"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : "bg-rose-50 text-rose-700 border-rose-200"
-                    }
-                  >
-                    {stats.systemHealth.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-black/5">
-                  <span className="text-neutral-500">Material Ingestion Failure Rate:</span>
-                  <span className="font-medium text-[#171717]">
-                    {stats.systemHealth.materialFailureRate}%
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-black/5">
-                  <span className="text-neutral-500">AI Operation Error Rate:</span>
-                  <span className="font-medium text-[#171717]">
-                    {stats.systemHealth.aiErrorRate}%
-                  </span>
-                </div>
-                <p className="text-[10px] text-neutral-400 pt-1">
-                  *Monitored at the Next.js application & Supabase service layer.
-                </p>
-              </CardContent>
+            {/* Application-Level Health */}
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl flex flex-col justify-between">
+              <div>
+                <CardHeader className="p-5 pb-2">
+                  <CardTitle className="font-serif text-lg font-normal text-[#171717] flex items-center gap-2">
+                    <Server className="h-4 w-4 text-[#E85D24]" />
+                    Application-Level Health
+                  </CardTitle>
+                  <CardDescription className="text-xs text-neutral-500">
+                    Application metrics, failure rates, and background health
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 pt-2 space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between py-1.5 border-b border-black/5">
+                    <span className="text-neutral-500">Operational Status:</span>
+                    <Badge
+                      variant="outline"
+                      className={
+                        stats.systemHealth.status === "HEALTHY"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
+                      }
+                    >
+                      {stats.systemHealth.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-black/5">
+                    <span className="text-neutral-500">Material Ingestion Failure Rate:</span>
+                    <span className="font-medium text-[#171717]">
+                      {stats.systemHealth.materialFailureRate}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-black/5">
+                    <span className="text-neutral-500">AI Operation Error Rate:</span>
+                    <span className="font-medium text-[#171717]">
+                      {stats.systemHealth.aiErrorRate}%
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-neutral-400 pt-1">
+                    *Monitored at the Next.js application & Supabase service layer.
+                  </p>
+                </CardContent>
+              </div>
+              <div className="p-5 pt-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleTabChange("system-health")}
+                  className="w-full text-xs text-[#E85D24] hover:text-[#d04e1b] hover:bg-[#E85D24]/10 h-8 font-medium justify-between px-2 cursor-pointer"
+                >
+                  <span>Inspect System Health</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </Card>
           </div>
         </TabsContent>
@@ -538,6 +678,86 @@ export function AdminContent({
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* TAB: PROJECTS (Platform-level Projects Inspection) */}
+        <TabsContent value="projects" className="space-y-6">
+          <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+            <CardHeader className="p-5 pb-3 border-b border-black/5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <CardTitle className="font-serif text-xl font-normal text-[#171717] flex items-center gap-2">
+                    <FolderKanban className="h-4 w-4 text-[#E85D24]" />
+                    Platform Projects ({stats.projects.total})
+                  </CardTitle>
+                  <CardDescription className="text-xs text-neutral-500 mt-0.5">
+                    Platform-level visibility into study projects across all study spaces and student workspaces.
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="bg-[#F5F3EE] text-neutral-600 border-black/10 text-xs w-fit">
+                  {stats.spaces.total} Study Spaces Registered
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-5 pt-3">
+              {stats.projects.recentList.length === 0 ? (
+                <div className="py-12 text-center text-xs text-neutral-500">
+                  <FolderKanban className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
+                  No study projects created yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-black/10 text-neutral-500">
+                        <th className="pb-2.5 font-medium">Project Name</th>
+                        <th className="pb-2.5 font-medium">Owner (Student)</th>
+                        <th className="pb-2.5 font-medium">Space</th>
+                        <th className="pb-2.5 font-medium">Created</th>
+                        <th className="pb-2.5 font-medium text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5">
+                      {stats.projects.recentList.map((p) => {
+                        const owner = stats.users.recentList.find((u) => u.id === p.userId);
+                        const space = stats.spaces.recentList.find((s) => s.id === p.spaceId);
+
+                        return (
+                          <tr key={p.id} className="hover:bg-stone-50/70 transition-colors">
+                            <td className="py-3 font-medium text-[#171717] flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#E85D24]" />
+                              {p.name}
+                            </td>
+                            <td className="py-3 text-neutral-600">
+                              {owner ? owner.displayName : `${p.userId.slice(0, 8)}...`}
+                            </td>
+                            <td className="py-3 text-neutral-500">
+                              {space ? space.name : "Study Space"}
+                            </td>
+                            <td className="py-3 text-neutral-400 text-[11px]">
+                              {new Date(p.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 text-right">
+                              <Link href={`/admin/users/${p.userId}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2.5 text-[#E85D24] hover:text-[#d04e1b] hover:bg-[#E85D24]/10 text-[11px] rounded-md font-medium cursor-pointer"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Inspect Journey
+                                </Button>
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* TAB 3: PLATFORM ACTIVITY FEED & ADVANCED FILTERS (B5, D) */}
@@ -701,9 +921,15 @@ export function AdminContent({
             <CardHeader className="p-5 pb-2">
               <CardTitle className="font-serif text-xl font-normal text-[#171717] flex flex-wrap items-center justify-between gap-2">
                 <span>Recent AI Model Operations</span>
-                <Badge variant="outline" className="bg-[#F5F3EE] text-neutral-600 border-black/10 text-[10px] font-sans">
-                  gemini-3.5-flash • gemini-3.5-flash-lite • gemini-embedding-001
-                </Badge>
+                {recordedModels.length > 0 ? (
+                  <Badge variant="outline" className="bg-[#F5F3EE] text-neutral-600 border-black/10 text-[10px] font-sans">
+                    {recordedModels.join(" • ")}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-[#F5F3EE] text-neutral-600 border-black/10 text-[10px] font-sans">
+                    Provider: Google Gemini
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription className="text-xs text-neutral-500">
                 Detailed latency, token count, and cost telemetry for every LLM operation.
@@ -816,6 +1042,210 @@ export function AdminContent({
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB: LEARNING ANALYTICS (Platform Learning Trends & Mastery) */}
+        <TabsContent value="learning-analytics" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+              <CardContent className="p-5 space-y-1">
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
+                  Assessments Completed
+                </div>
+                <div className="font-serif text-3xl font-normal text-[#171717] tracking-tight">
+                  {stats.learningAnalytics.totalAssessmentsCompleted}
+                </div>
+                <div className="text-[11px] text-neutral-500">Across active study projects</div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+              <CardContent className="p-5 space-y-1">
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
+                  Platform Average Score
+                </div>
+                <div className="font-serif text-3xl font-normal text-emerald-700 tracking-tight">
+                  {stats.learningAnalytics.averageScore}%
+                </div>
+                <div className="text-[11px] text-neutral-500">Aggregate quiz comprehension</div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+              <CardContent className="p-5 space-y-1">
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
+                  Tracked Concepts
+                </div>
+                <div className="font-serif text-3xl font-normal text-[#171717] tracking-tight">
+                  {stats.learningAnalytics.totalConceptsAssessed}
+                </div>
+                <div className="text-[11px] text-neutral-500">Knowledge graph concept evaluations</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+            <CardHeader className="p-5 pb-3">
+              <CardTitle className="font-serif text-xl font-normal text-[#171717] flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-600" />
+                Aggregate Student Concept Mastery Distribution
+              </CardTitle>
+              <CardDescription className="text-xs text-neutral-500">
+                Platform-wide breakdown of concept mastery states across all learners.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 pt-2 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+                  <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">
+                    Improving Mastery
+                  </span>
+                  <div className="font-serif text-3xl text-emerald-700">
+                    {stats.learningAnalytics.masteryDistribution.improving}
+                  </div>
+                  <p className="text-[11px] text-emerald-600/80">
+                    Concepts showing upward trajectories on successive assessments
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-stone-100 border border-stone-200 space-y-1">
+                  <span className="text-xs font-semibold text-stone-800 uppercase tracking-wider">
+                    Stable Concepts
+                  </span>
+                  <div className="font-serif text-3xl text-stone-900">
+                    {stats.learningAnalytics.masteryDistribution.stable}
+                  </div>
+                  <p className="text-[11px] text-stone-600">
+                    Concepts with consistent retention and passing scores
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 space-y-1">
+                  <span className="text-xs font-semibold text-rose-800 uppercase tracking-wider">
+                    Needs Attention
+                  </span>
+                  <div className="font-serif text-3xl text-rose-700">
+                    {stats.learningAnalytics.masteryDistribution.needsAttention}
+                  </div>
+                  <p className="text-[11px] text-rose-600/80">
+                    Concepts where students encounter persistent knowledge gaps
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-[#F5F3EE] border border-black/5 text-xs space-y-2">
+                <span className="font-medium text-[#171717]">Educational Methodology Note:</span>
+                <p className="text-neutral-500 leading-relaxed">
+                  Concept mastery is calculated continuously as students complete adaptive quizzes and review tutor explanations. Mastery tracks moving averages weighted toward recent quiz attempts.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB: SYSTEM HEALTH (Operational Telemetry & Diagnostics) */}
+        <TabsContent value="system-health" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+              <CardContent className="p-5 space-y-1">
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
+                  Operational Status
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Badge
+                    variant="outline"
+                    className={`text-sm px-2.5 py-0.5 font-medium ${
+                      stats.systemHealth.status === "HEALTHY"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200"
+                    }`}
+                  >
+                    {stats.systemHealth.status}
+                  </Badge>
+                </div>
+                <div className="text-[11px] text-neutral-500 pt-1">
+                  {stats.systemHealth.unresolvedIssuesCount} unresolved system issues
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+              <CardContent className="p-5 space-y-1">
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
+                  Ingestion Failure Rate
+                </div>
+                <div className="font-serif text-3xl font-normal text-[#171717] tracking-tight">
+                  {stats.systemHealth.materialFailureRate}%
+                </div>
+                <div className="text-[11px] text-neutral-500">
+                  {stats.backgroundProcessing.materialsFailed} failed of {stats.backgroundProcessing.materialsTotal} total files
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+              <CardContent className="p-5 space-y-1">
+                <div className="text-xs uppercase tracking-wider font-semibold text-neutral-500">
+                  AI Operation Error Rate
+                </div>
+                <div className="font-serif text-3xl font-normal text-[#171717] tracking-tight">
+                  {stats.systemHealth.aiErrorRate}%
+                </div>
+                <div className="text-[11px] text-neutral-500">
+                  {stats.aiUsage.successRate}% overall AI API call success rate
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-black/10 bg-white shadow-xs rounded-xl">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="font-serif text-xl font-normal text-[#171717] flex items-center gap-2">
+                <Server className="h-4 w-4 text-[#E85D24]" />
+                Ingestion Failures & Processing Diagnostic Log
+              </CardTitle>
+              <CardDescription className="text-xs text-neutral-500">
+                Detailed error logs from document text extraction and background chunking.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 pt-3">
+              {stats.backgroundProcessing.recentFailures.length === 0 ? (
+                <div className="py-8 text-center text-xs text-neutral-500">
+                  <CheckCircle className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+                  All materials processed successfully. Zero active ingestion failures.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {stats.backgroundProcessing.recentFailures.map((fail) => (
+                    <div
+                      key={fail.id}
+                      className="p-3.5 rounded-lg border border-rose-200 bg-rose-50/60 text-xs space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-rose-900">{fail.fileName}</span>
+                        <span className="text-[10px] text-neutral-500">
+                          {new Date(fail.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-rose-700 text-[11px] font-mono leading-relaxed">
+                        {fail.errorMessage || "Unknown error during text extraction / chunking."}
+                      </p>
+                      <div className="text-[10px] text-neutral-400">
+                        Project ID: <span className="font-mono">{fail.projectId}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-6 p-4 rounded-lg bg-[#F5F3EE] border border-black/5 text-xs text-neutral-500 space-y-1">
+                <span className="font-medium text-[#171717] block">Monitoring Scope:</span>
+                <p className="leading-relaxed">
+                  This interface provides application-level operational telemetry for learning materials, AI invocations, and database background tasks. It is not intended to replace cloud infrastructure monitoring (e.g., Supabase metrics, Vercel health, or Inngest Cloud).
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
