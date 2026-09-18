@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Instrument+Serif:ital@0;1&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -5,6 +6,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-dm-sans: var(--font-dm-sans), "DM Sans", sans-serif;
+  --font-serif-display: var(--font-instrument-serif), "Instrument Serif", Georgia, serif;
+  --color-ink: #171717;
+  --color-paper: #F5F3EE;
+  --color-orange: #E85D24;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -146,4 +152,99 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(148, 163, 184, 0.3);
   }
+}
+
+/* Landing Page Typography & Design Utilities */
+.display {
+  font-family: var(--font-instrument-serif), "Instrument Serif", Georgia, serif;
+  letter-spacing: -0.04em;
+}
+
+.hero {
+  background: #f5f3ee;
+  border-radius: 0 0 36px 36px;
+}
+
+.hairline {
+  border-color: rgba(23, 23, 23, 0.12);
+}
+
+.product-shadow {
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.1),
+    0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.subtle-shadow {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.robot {
+  animation: float 7s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.fade-up {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeUp 0.8s ease forwards;
+}
+
+.delay-1 {
+  animation-delay: 0.12s;
+}
+
+.delay-2 {
+  animation-delay: 0.24s;
+}
+
+.delay-3 {
+  animation-delay: 0.36s;
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.orange-dot {
+  box-shadow: 0 0 0 5px rgba(232, 93, 36, 0.1);
+}
+
+.bg-ink {
+  background-color: #171717;
+}
+
+.text-ink {
+  color: #171717;
+}
+
+.bg-paper {
+  background-color: #f5f3ee;
+}
+
+.text-paper {
+  color: #f5f3ee;
+}
+
+.text-orange {
+  color: #e85d24;
+}
+
+.bg-orange {
+  background-color: #e85d24;
+}
+
+.border-orange {
+  border-color: #e85d24;
 }

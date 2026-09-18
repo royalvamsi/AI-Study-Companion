@@ -47,9 +47,10 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Redirect unauthenticated users to login (allow public auth routes)
+  // Redirect unauthenticated users to login (allow public routes: landing page & auth)
   if (
     !user &&
+    pathname !== "/" &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/signup") &&
     !pathname.startsWith("/auth")

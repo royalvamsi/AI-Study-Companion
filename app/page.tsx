@@ -1,15 +1,12 @@
-import { redirect } from "next/navigation";
-import { createServerClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+import { LandingContent } from "@/components/landing/landing-content";
 
-export default async function HomePage() {
-  const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const metadata: Metadata = {
+  title: "AI Study Companion — Learn with context.",
+  description:
+    "A learning companion that understands what you're studying, remembers where you are, and helps you decide what to do next.",
+};
 
-  if (user) {
-    redirect("/dashboard");
-  } else {
-    redirect("/login");
-  }
+export default function HomePage() {
+  return <LandingContent />;
 }
