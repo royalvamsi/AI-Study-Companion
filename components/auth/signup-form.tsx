@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail, Lock, User } from "lucide-react";
 
 export function SignupForm() {
@@ -59,9 +58,27 @@ export function SignupForm() {
 
   if (success) {
     return (
-      <div className="text-center py-4">
-        <div className="text-green-400 text-sm font-medium">
-          Account created! Redirecting…
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-6 text-center space-y-2">
+        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <div className="text-emerald-900 text-base font-semibold">
+          Account created!
+        </div>
+        <div className="text-emerald-700 text-xs">
+          Redirecting to your workspace...
         </div>
       </div>
     );
@@ -70,17 +87,24 @@ export function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <Alert className="border-red-500/30 bg-red-500/10 text-red-400">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <div
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-xs text-red-700 leading-relaxed flex items-start gap-2.5"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="displayName" className="text-slate-300 text-sm">
+        <Label
+          htmlFor="displayName"
+          className="text-xs font-semibold uppercase tracking-wider text-neutral-500"
+        >
           Display name
         </Label>
         <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
           <Input
             id="displayName"
             type="text"
@@ -88,17 +112,20 @@ export function SignupForm() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             disabled={loading}
-            className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/20"
+            className="h-11 pl-10 bg-white border-neutral-200 text-ink placeholder:text-neutral-400 rounded-xl focus-visible:border-orange focus-visible:ring-2 focus-visible:ring-orange/20 transition-colors"
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="email" className="text-slate-300 text-sm">
+        <Label
+          htmlFor="email"
+          className="text-xs font-semibold uppercase tracking-wider text-neutral-500"
+        >
           Email address
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
           <Input
             id="email"
             type="email"
@@ -107,26 +134,32 @@ export function SignupForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={loading}
-            className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/20"
+            className="h-11 pl-10 bg-white border-neutral-200 text-ink placeholder:text-neutral-400 rounded-xl focus-visible:border-orange focus-visible:ring-2 focus-visible:ring-orange/20 transition-colors"
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="password" className="text-slate-300 text-sm">
-          Password
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label
+            htmlFor="password"
+            className="text-xs font-semibold uppercase tracking-wider text-neutral-500"
+          >
+            Password
+          </Label>
+          <span className="text-[11px] text-neutral-400">Min. 8 characters</span>
+        </div>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
           <Input
             id="password"
             type="password"
-            placeholder="Min. 8 characters"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={loading}
-            className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500/20"
+            className="h-11 pl-10 bg-white border-neutral-200 text-ink placeholder:text-neutral-400 rounded-xl focus-visible:border-orange focus-visible:ring-2 focus-visible:ring-orange/20 transition-colors"
           />
         </div>
       </div>
@@ -134,12 +167,12 @@ export function SignupForm() {
       <Button
         type="submit"
         disabled={loading}
-        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium h-11 transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+        className="w-full bg-orange hover:bg-[#d44f19] text-white font-medium h-11 rounded-full text-sm transition-all duration-200 shadow-sm disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed mt-2"
       >
         {loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating account…
+            Creating account...
           </>
         ) : (
           "Create free account"
