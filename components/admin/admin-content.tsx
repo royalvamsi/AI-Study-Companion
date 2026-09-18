@@ -126,7 +126,7 @@ export function AdminContent({
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
       {/* Breadcrumb Navigation */}
       <Breadcrumbs
         items={[
@@ -136,31 +136,28 @@ export function AdminContent({
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-black/10">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b hairline">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge
-              variant="outline"
-              className="bg-[#F5F3EE] text-neutral-700 border-black/10 text-xs py-0.5"
-            >
-              <Shield className="h-3 w-3 mr-1 text-[#E85D24]" />
+          <div className="flex items-center gap-2.5 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500 font-sans">
               Operational Admin
-            </Badge>
+            </span>
             <Badge
               variant="outline"
               className={
                 stats.systemHealth.status === "HEALTHY"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-xs"
-                  : "bg-rose-50 text-rose-700 border-rose-200 text-xs"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-xs ml-2"
+                  : "bg-rose-50 text-rose-700 border-rose-200 text-xs ml-2"
               }
             >
               System Health: {stats.systemHealth.status}
             </Badge>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#171717] tracking-tight">
+          <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight font-serif">
             Platform Operations & Intelligence
           </h1>
-          <p className="text-sm text-neutral-500 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-sm text-neutral-600 mt-2 max-w-2xl leading-relaxed font-sans">
             Platform-level oversight: users, spaces, learning analytics, AI telemetry, and system health.
           </p>
         </div>

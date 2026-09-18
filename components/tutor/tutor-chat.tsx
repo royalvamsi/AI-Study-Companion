@@ -273,309 +273,321 @@ export function TutorChat({
   return (
     <div className="flex flex-col h-full bg-[#F5F3EE] text-ink font-sans">
       {/* Tutor Workspace Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b hairline bg-[#F5F3EE] shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-[10px] bg-ink flex items-center justify-center shrink-0">
-            <div className="w-3.5 h-3.5 rounded-full border border-orange relative">
-              <span className="absolute w-1 h-1 bg-orange rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+      <div className="border-b hairline bg-[#F5F3EE] shrink-0">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-10 py-4 sm:py-5">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-ink flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-3.5 h-3.5 rounded-full border border-orange relative">
+                <span className="absolute w-1 h-1 bg-orange rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+            <div>
+              <Breadcrumbs
+                items={
+                  activeProject
+                    ? [
+                        { label: "Spaces & Projects", href: "/projects" },
+                        { label: activeProject.name, href: `/projects/${activeProject.id}` },
+                        { label: "AI Tutor" },
+                      ]
+                    : [
+                        { label: "Dashboard", href: "/dashboard" },
+                        { label: "AI Tutor" },
+                      ]
+                }
+                className="mb-1"
+              />
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="font-serif text-xl sm:text-2xl font-normal text-ink tracking-tight">
+                  AI Study Tutor
+                </h1>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-white border border-black/10 text-neutral-600 font-medium font-sans hidden sm:inline-flex">
+                  Document-Grounded
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 font-sans mt-0.5">
+                {activeProject
+                  ? readyDocsCount > 0
+                    ? `${readyDocsCount} document${readyDocsCount > 1 ? "s" : ""} indexed & cited`
+                    : "Upload a PDF material in this project for grounded retrieval"
+                  : "Select a project to start learning"}
+              </p>
             </div>
           </div>
-          <div>
-            <Breadcrumbs
-              items={
-                activeProject
-                  ? [
-                      { label: "Spaces & Projects", href: "/projects" },
-                      { label: activeProject.name, href: `/projects/${activeProject.id}` },
-                      { label: "AI Tutor" },
-                    ]
-                  : [
-                      { label: "Dashboard", href: "/dashboard" },
-                      { label: "AI Tutor" },
-                    ]
-              }
-              className="mb-1"
-            />
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold text-ink tracking-tight font-sans">
-                AI Study Tutor
-              </h1>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-black/10 text-neutral-600 font-medium hidden sm:inline-flex">
-                Document-Grounded
-              </span>
-            </div>
-            <p className="text-[11px] text-neutral-500">
-              {activeProject
-                ? readyDocsCount > 0
-                  ? `${readyDocsCount} document${readyDocsCount > 1 ? "s" : ""} indexed & cited`
-                  : "Upload a PDF material in this project for grounded retrieval"
-                : "Select a project to start learning"}
-            </p>
-          </div>
-        </div>
 
-        {/* Project Selector - Strictly preserves project name rendering */}
-        <div className="flex items-center gap-2">
-          <Select
-            value={activeProjectId ?? ""}
-            onValueChange={(v) => {
-              if (v) router.push(`/tutor?project=${v}`);
-            }}
-          >
-            <SelectTrigger className="w-52 sm:w-64 bg-white border-black/10 text-neutral-800 text-xs h-9 px-3 rounded-xl shadow-xs cursor-pointer">
-              <SelectValue placeholder="Select study project">
-                {(val: string | null) => {
-                  const targetId = val || activeProjectId;
-                  if (!targetId) return "Select study project";
-                  const match = projects.find((p) => p.id === targetId);
-                  return match?.name ?? "Select study project";
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl">
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Project Selector - Strictly preserves project name rendering */}
+          <div className="flex items-center gap-2">
+            <Select
+              value={activeProjectId ?? ""}
+              onValueChange={(v) => {
+                if (v) router.push(`/tutor?project=${v}`);
+              }}
+            >
+              <SelectTrigger className="w-52 sm:w-64 bg-white border border-black/15 text-ink text-xs h-10 px-3 rounded-xl hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
+                <SelectValue placeholder="Select study project">
+                  {(val: string | null) => {
+                    const targetId = val || activeProjectId;
+                    if (!targetId) return "Select study project";
+                    const match = projects.find((p) => p.id === targetId);
+                    return match?.name ?? "Select study project";
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl font-sans">
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id} className="text-xs cursor-pointer">
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {!activeProjectId ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="bg-white rounded-[24px] border border-black/10 p-8 max-w-md text-center subtle-shadow space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
-                <Brain className="h-6 w-6 text-ink" />
-              </div>
-              <h3 className="display text-2xl font-bold text-ink">
-                Select a Study Project
-              </h3>
-              <p className="text-xs text-neutral-500 leading-relaxed font-sans">
-                Choose an active study project from the selector above. The AI Tutor will retrieve and cite exact excerpts from that project&apos;s materials.
-              </p>
-            </div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[70%] max-w-xl mx-auto text-center space-y-6 py-8">
-            <div className="w-12 h-12 rounded-2xl bg-white border border-black/10 text-ink flex items-center justify-center shadow-xs">
-              <Sparkles className="h-6 w-6 text-orange" />
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="display text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-                {activeProject?.name} Workspace
-              </h3>
-              <p className="text-xs text-neutral-500 max-w-md leading-relaxed font-sans">
-                Ask any question about this project&apos;s materials. The AI strictly cites evidence from your uploaded documents and notifies you if evidence is insufficient.
-              </p>
-            </div>
-
-            {/* Suggested Prompts Grid */}
-            <div className="w-full space-y-2.5 pt-2 text-left">
-              <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider text-center">
-                Suggested study questions
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {STARTER_PROMPTS.map((prompt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => sendMessage(prompt)}
-                    disabled={isStreaming}
-                    className="p-3.5 rounded-xl border border-black/10 bg-white hover:bg-neutral-50 text-left text-xs text-neutral-700 hover:text-ink transition-all flex items-start gap-2.5 group subtle-shadow cursor-pointer"
-                  >
-                    <BookOpen className="h-4 w-4 text-orange shrink-0 mt-0.5" />
-                    <span className="leading-relaxed font-sans">{prompt}</span>
-                  </button>
-                ))}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-10 py-6">
+        <div className="max-w-7xl mx-auto w-full space-y-6">
+          {!activeProjectId ? (
+            <div className="flex items-center justify-center min-h-[60vh] w-full">
+              <div className="bg-white rounded-2xl border border-black/10 p-8 sm:p-12 max-w-lg w-full text-center subtle-shadow space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#F5F3EE] border border-black/10 text-ink flex items-center justify-center mx-auto shadow-xs">
+                  <BookOpen className="h-7 w-7 text-neutral-700" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="font-serif text-2xl sm:text-3xl font-normal text-ink tracking-tight">
+                    Select a Study Project
+                  </h2>
+                  <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed font-sans max-w-sm mx-auto">
+                    Choose an active study project from the selector above. The AI Tutor will retrieve and cite exact excerpts from that project&apos;s materials.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          messages.map((msg, i) => {
-            const isUser = msg.role === "user";
-            const isInsufficient = msg.evidenceState === "INSUFFICIENT_EVIDENCE";
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto text-center space-y-6 py-8">
+              <div className="w-14 h-14 rounded-2xl bg-white border border-black/10 text-ink flex items-center justify-center shadow-xs">
+                <Sparkles className="h-7 w-7 text-orange" />
+              </div>
 
-            return (
-              <div
-                key={i}
-                className={`flex gap-3.5 max-w-4xl mx-auto ${
-                  isUser ? "justify-end" : "justify-start"
-                }`}
-              >
-                {!isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-white border border-black/10 flex items-center justify-center shrink-0 mt-0.5 text-ink shadow-xs">
-                    <Brain className="h-4 w-4 text-neutral-700" />
-                  </div>
-                )}
+              <div className="space-y-2">
+                <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal text-ink tracking-tight">
+                  {activeProject?.name} Workspace
+                </h2>
+                <p className="text-xs sm:text-sm text-neutral-500 max-w-lg leading-relaxed font-sans mx-auto">
+                  Ask any question about this project&apos;s materials. The AI strictly cites evidence from your uploaded documents and notifies you if evidence is insufficient.
+                </p>
+              </div>
 
+              {/* Suggested Prompts Grid */}
+              <div className="w-full space-y-2.5 pt-2 text-left">
+                <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider text-center font-sans">
+                  Suggested study questions
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                  {STARTER_PROMPTS.map((prompt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => sendMessage(prompt)}
+                      disabled={isStreaming}
+                      className="p-4 rounded-xl border border-black/10 bg-white hover:bg-neutral-50 hover:border-black/20 text-left text-xs sm:text-sm text-neutral-700 hover:text-ink transition-all flex items-start gap-3 group subtle-shadow cursor-pointer font-sans"
+                    >
+                      <BookOpen className="h-4 w-4 text-orange shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{prompt}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            messages.map((msg, i) => {
+              const isUser = msg.role === "user";
+              const isInsufficient = msg.evidenceState === "INSUFFICIENT_EVIDENCE";
+
+              return (
                 <div
-                  className={`space-y-2 max-w-[85%] sm:max-w-[78%] ${
-                    isUser ? "text-right" : ""
+                  key={i}
+                  className={`flex gap-3.5 sm:gap-4 w-full ${
+                    isUser ? "justify-end" : "justify-start"
                   }`}
                 >
-                  <div
-                    className={`rounded-2xl px-5 py-3.5 text-xs sm:text-sm leading-relaxed ${
-                      isUser
-                        ? "bg-ink text-white rounded-br-sm shadow-xs"
-                        : "bg-white text-ink rounded-bl-sm border border-black/10 subtle-shadow"
-                    }`}
-                  >
-                    {isUser ? (
-                      <div className="whitespace-pre-wrap font-sans leading-relaxed">{msg.content}</div>
-                    ) : (
-                      <>
-                        {msg.content ? (
-                          <TutorMarkdown content={msg.content} />
-                        ) : isStreaming && i === messages.length - 1 ? (
-                          <div className="flex items-center gap-2 text-orange text-xs py-1 font-medium">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>Synthesizing grounded evidence…</span>
-                          </div>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-
-                  {/* Insufficient Evidence Notice */}
-                  {!isUser && isInsufficient && (
-                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5">
-                      <HelpCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-rose-900">
-                          Insufficient Evidence in Uploaded Material
-                        </p>
-                        <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed font-sans">
-                          This information is not available in your study material. To ensure strict academic integrity, general unverified knowledge is not substituted.
-                        </p>
+                  {!isUser && (
+                    <div className="w-8 h-8 rounded-xl bg-white border border-black/10 flex items-center justify-center shrink-0 mt-1 text-ink shadow-xs">
+                      <div className="w-3.5 h-3.5 rounded-full border border-orange relative">
+                        <span className="absolute w-1 h-1 bg-orange rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                       </div>
                     </div>
                   )}
 
-                  {/* Evidence State Badge */}
-                  {!isUser && msg.evidenceState && !isInsufficient && (
-                    <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                      {(() => {
-                        const cfg =
-                          evidenceConfig[msg.evidenceState] ??
-                          evidenceConfig.SUPPORTED;
-                        const Icon = cfg.icon;
-                        return (
-                          <span
-                            className={`inline-flex items-center text-[10px] font-medium ${cfg.color} border px-2.5 py-0.5 rounded-full`}
-                          >
-                            <Icon className="h-3 w-3 mr-1" />
-                            {cfg.label}
-                          </span>
-                        );
-                      })()}
+                  <div
+                    className={`space-y-2.5 ${
+                      isUser
+                        ? "max-w-[85%] sm:max-w-[75%] lg:max-w-[68%] text-right"
+                        : "flex-1 max-w-full sm:max-w-[92%] lg:max-w-[88%]"
+                    }`}
+                  >
+                    <div
+                      className={`rounded-2xl px-5 py-4 text-xs sm:text-sm leading-relaxed ${
+                        isUser
+                          ? "bg-ink text-white rounded-br-xs shadow-xs inline-block text-left"
+                          : "bg-white text-ink rounded-bl-xs border border-black/10 subtle-shadow"
+                      }`}
+                    >
+                      {isUser ? (
+                        <div className="whitespace-pre-wrap font-sans leading-relaxed">{msg.content}</div>
+                      ) : (
+                        <>
+                          {msg.content ? (
+                            <TutorMarkdown content={msg.content} />
+                          ) : isStreaming && i === messages.length - 1 ? (
+                            <div className="flex items-center gap-2 text-orange text-xs py-1 font-medium font-sans">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Synthesizing grounded evidence…</span>
+                            </div>
+                          ) : null}
+                        </>
+                      )}
                     </div>
-                  )}
 
-                  {/* Academic Citations Badges */}
-                  {!isUser && msg.citations && msg.citations.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider mr-1">
-                        Sources:
-                      </span>
-                      {msg.citations.map((c, ci) => {
-                        const lower = (c.fileName || "").toLowerCase();
-                        const fileType = c.fileType || "";
-                        const isPptx =
-                          fileType.includes("presentation") ||
-                          lower.endsWith(".pptx");
-                        const isPdf =
-                          fileType.includes("pdf") ||
-                          lower.endsWith(".pdf");
+                    {/* Insufficient Evidence Notice */}
+                    {!isUser && isInsufficient && (
+                      <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200/70 text-xs text-rose-900 flex items-start gap-2.5 font-sans">
+                        <HelpCircle className="h-4 w-4 text-rose-700 shrink-0 mt-0.5" />
+                        <div className="space-y-0.5">
+                          <p className="font-semibold text-rose-950">
+                            Insufficient Evidence in Uploaded Material
+                          </p>
+                          <p className="text-[11px] text-rose-800 leading-relaxed font-sans">
+                            This information is not available in your study material. To ensure strict academic integrity, general unverified knowledge is not substituted.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
-                        let pageOrSourceTag: string;
-                        if (isPptx && c.pageNumber != null) {
-                          pageOrSourceTag = `[slide ${c.pageNumber}]`;
-                        } else if (isPdf && c.pageNumber != null) {
-                          pageOrSourceTag = `[p. ${c.pageNumber}]`;
-                        } else {
-                          pageOrSourceTag = `[Source ${ci + 1}]`;
-                        }
-
-                        return (
-                          <span
-                            key={ci}
-                            className="inline-flex items-center text-[10px] py-0.5 px-2 rounded-md bg-white border border-black/10 text-neutral-700 shadow-xs"
-                            title={c.excerpt ? `Excerpt: "${c.excerpt.slice(0, 100)}..."` : undefined}
-                          >
-                            <FileText className="h-2.5 w-2.5 mr-1 text-neutral-400" />
-                            <span className="font-semibold text-ink mr-1">
-                              {pageOrSourceTag}
+                    {/* Evidence State Badge */}
+                    {!isUser && msg.evidenceState && !isInsufficient && (
+                      <div className="flex items-center gap-2 flex-wrap pt-0.5 font-sans">
+                        {(() => {
+                          const cfg =
+                            evidenceConfig[msg.evidenceState] ??
+                            evidenceConfig.SUPPORTED;
+                          const Icon = cfg.icon;
+                          return (
+                            <span
+                              className={`inline-flex items-center text-[10px] font-medium ${cfg.color} border px-2.5 py-0.5 rounded-full`}
+                            >
+                              <Icon className="h-3 w-3 mr-1" />
+                              {cfg.label}
                             </span>
-                            <span className="text-neutral-600 font-medium truncate max-w-[160px]">
-                              {c.fileName}
-                            </span>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })()}
+                      </div>
+                    )}
 
-                  {/* Practice in Quiz Link */}
-                  {!isUser && msg.content && activeProjectId && (
-                    <div className="pt-1.5 flex items-center justify-between text-[11px] text-neutral-500 font-sans">
-                      <span>Understood this explanation?</span>
-                      <Link
-                        href={`/quiz?project=${activeProjectId}`}
-                        className="text-orange hover:underline font-medium inline-flex items-center gap-1 transition-colors"
-                      >
-                        <ClipboardCheck className="h-3 w-3 text-emerald-600" />
-                        Practice in Quiz &rarr;
-                      </Link>
+                    {/* Academic Citations Badges */}
+                    {!isUser && msg.citations && msg.citations.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5 font-sans">
+                        <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider mr-1">
+                          Sources:
+                        </span>
+                        {msg.citations.map((c, ci) => {
+                          const lower = (c.fileName || "").toLowerCase();
+                          const fileType = c.fileType || "";
+                          const isPptx =
+                            fileType.includes("presentation") ||
+                            lower.endsWith(".pptx");
+                          const isPdf =
+                            fileType.includes("pdf") ||
+                            lower.endsWith(".pdf");
+
+                          let pageOrSourceTag: string;
+                          if (isPptx && c.pageNumber != null) {
+                            pageOrSourceTag = `[slide ${c.pageNumber}]`;
+                          } else if (isPdf && c.pageNumber != null) {
+                            pageOrSourceTag = `[p. ${c.pageNumber}]`;
+                          } else {
+                            pageOrSourceTag = `[Source ${ci + 1}]`;
+                          }
+
+                          return (
+                            <span
+                              key={ci}
+                              className="inline-flex items-center text-[10px] py-0.5 px-2 rounded-md bg-white border border-black/10 text-neutral-700 shadow-xs"
+                              title={c.excerpt ? `Excerpt: "${c.excerpt.slice(0, 100)}..."` : undefined}
+                            >
+                              <FileText className="h-2.5 w-2.5 mr-1 text-neutral-400" />
+                              <span className="font-semibold text-ink mr-1">
+                                {pageOrSourceTag}
+                              </span>
+                              <span className="text-neutral-600 font-medium truncate max-w-[160px]">
+                                {c.fileName}
+                              </span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Practice in Quiz Link */}
+                    {!isUser && msg.content && activeProjectId && (
+                      <div className="pt-2 flex items-center justify-between text-[11px] text-neutral-500 font-sans border-t hairline mt-3">
+                        <span>Understood this explanation?</span>
+                        <Link
+                          href={`/quiz?project=${activeProjectId}`}
+                          className="text-orange hover:text-[#D44F19] hover:underline font-medium inline-flex items-center gap-1.5 transition-colors"
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5 text-orange" />
+                          <span>Practice in Quiz &rarr;</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  {isUser && (
+                    <div className="w-8 h-8 rounded-xl bg-white border border-black/10 flex items-center justify-center shrink-0 mt-0.5 text-neutral-700 shadow-xs">
+                      <User className="h-4 w-4" />
                     </div>
                   )}
                 </div>
-
-                {isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-white border border-black/10 flex items-center justify-center shrink-0 mt-0.5 text-neutral-700 shadow-xs">
-                    <User className="h-4 w-4" />
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input Area */}
       {activeProjectId && (
-        <div className="p-4 sm:p-5 border-t hairline bg-[#F5F3EE] shrink-0">
-          <div className="flex items-end gap-2.5 max-w-4xl mx-auto">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Ask a question grounded in your study documents… (Enter to send, Shift+Enter for newline)"
-              rows={1}
-              className="bg-white border-black/15 text-ink text-xs sm:text-sm placeholder:text-neutral-400 resize-none min-h-[44px] max-h-[160px] rounded-xl focus-visible:ring-1 focus-visible:ring-orange focus-visible:border-orange shadow-xs"
-              disabled={isStreaming}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isStreaming}
-              className="bg-orange hover:bg-[#D44F19] text-white h-[44px] px-5 rounded-xl shrink-0 shadow-xs transition-colors cursor-pointer"
-              aria-label="Send study query"
-            >
-              {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+        <div className="border-t hairline bg-[#F5F3EE] shrink-0">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-10 py-4 sm:py-5">
+            <div className="flex items-end gap-2.5 bg-white p-2 rounded-2xl border border-black/10 shadow-xs focus-within:border-black/25 transition-all">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Ask a question grounded in your study documents… (Enter to send, Shift+Enter for newline)"
+                rows={1}
+                className="flex-1 bg-transparent border-0 text-ink text-xs sm:text-sm placeholder:text-neutral-400 resize-none min-h-[44px] max-h-[160px] p-2.5 focus-visible:ring-0 focus-visible:border-0 shadow-none font-sans leading-relaxed"
+                disabled={isStreaming}
+              />
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim() || isStreaming}
+                className="bg-orange hover:bg-[#D44F19] disabled:opacity-40 disabled:cursor-not-allowed text-white h-11 px-5 rounded-xl shrink-0 shadow-xs transition-colors cursor-pointer inline-flex items-center justify-center font-sans"
+                aria-label="Send study query"
+              >
+                {isStreaming ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}

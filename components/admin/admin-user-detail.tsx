@@ -122,17 +122,17 @@ export function AdminUserDetail({ data }: AdminUserDetailProps) {
   const { user, spaces, projects, activity, assessments, averageScore, mastery, recommendations, aiUsage } = data;
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
       {/* Navigation and Breadcrumb Header */}
       <div className="flex flex-col gap-4">
         <Breadcrumbs
           items={[
-            { label: "Admin Dashboard", href: "/admin" },
-            { label: "User Inspection", href: `/admin/users/${user.id}` },
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Admin Operations", href: "/admin" },
             { label: user.displayName },
           ]}
         />
-        <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-black/10">
+        <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b hairline">
           <div className="flex items-center gap-3">
             <Link
               href="/admin"

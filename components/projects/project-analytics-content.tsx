@@ -89,26 +89,26 @@ export function ProjectAnalyticsContent({ data }: ProjectAnalyticsContentProps) 
       : 0;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
-          { label: "Projects", href: "/projects" },
+          { label: "Spaces & Projects", href: "/projects" },
           { label: project.name, href: `/projects/${project.id}` },
           { label: "Analytics" },
         ]}
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-black/10 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b hairline pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#E85D24]" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500 font-sans">
               Project Performance
             </span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#171717] tracking-tight">
+          <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight font-serif">
             {project.name}
           </h1>
           {project.learningGoal && (

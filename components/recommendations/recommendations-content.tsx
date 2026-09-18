@@ -120,7 +120,7 @@ export function RecommendationsContent({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
       {/* Breadcrumb Navigation */}
       <Breadcrumbs
         items={[
@@ -130,18 +130,18 @@ export function RecommendationsContent({
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-black/10">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b hairline">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#E85D24]" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500 font-sans">
               Adaptive Guidance
             </span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#171717] tracking-tight">
+          <h1 className="display text-3xl sm:text-4xl lg:text-5xl text-ink leading-[1.05] tracking-tight font-serif">
             Study Recommendations
           </h1>
-          <p className="text-sm text-neutral-500 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-sm text-neutral-600 mt-2 max-w-2xl leading-relaxed font-sans">
             Actionable next steps generated from your concept mastery and quiz evaluations.
           </p>
         </div>

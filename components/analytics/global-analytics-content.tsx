@@ -74,28 +74,28 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
   }));
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Global Analytics" },
+          { label: "Analytics" },
         ]}
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-black/10">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b hairline">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#E85D24]" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange orange-dot" />
+            <span className="text-[11px] uppercase tracking-[.18em] font-semibold text-neutral-500 font-sans">
               Cross-Project Intelligence
             </span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#171717] tracking-tight">
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-ink leading-[1.05] tracking-tight">
             Learning Analytics
           </h1>
-          <p className="text-sm text-neutral-500 mt-1 max-w-2xl leading-relaxed">
+          <p className="text-sm text-neutral-600 mt-2 max-w-2xl leading-relaxed font-sans">
             Aggregated cross-project intelligence: learning activity, assessment performance, mastery progress, and AI telemetry.
           </p>
         </div>
@@ -105,9 +105,9 @@ export function GlobalAnalyticsContent({ data }: GlobalAnalyticsContentProps) {
             <Button
               variant="outline"
               size="sm"
-              className="border-black/10 bg-white hover:bg-neutral-50 text-[#171717] text-xs h-9 px-3.5 rounded-lg font-medium shadow-sm"
+              className="border-black/10 bg-white hover:bg-neutral-50 text-ink text-xs h-9 px-3.5 rounded-xl font-medium shadow-xs transition-colors cursor-pointer"
             >
-              <FolderKanban className="h-3.5 w-3.5 mr-1.5 text-[#E85D24]" />
+              <FolderKanban className="h-3.5 w-3.5 mr-1.5 text-orange" />
               View Spaces & Projects
             </Button>
           </Link>
