@@ -7,6 +7,7 @@ import {
   MAX_MATERIAL_FILE_SIZE,
   resolveCanonicalFileType,
   isValidUUID,
+  isSafeFileName,
   validateStoragePath,
 } from "@/lib/materials/validation";
 
@@ -15,6 +16,7 @@ import {
  * Finalizes a direct client-to-storage material upload.
  * Receives metadata only (never the file content itself), validates storage path
  * and object existence, inserts the material record into the database, and fires Inngest.
+ * Idempotent: safe to retry if network response was lost.
  */
 export async function POST(
   request: Request,
@@ -72,9 +74,9 @@ export async function POST(
       );
     }
 
-    if (!fileName || typeof fileName !== "string") {
+    if (!fileName || typeof fileName !== "string" || !isSafeFileName(fileName)) {
       return NextResponse.json(
-        { error: "fileName is required" },
+        { error: "Valid fileName is required without dangerous path segments or separators" },
         { status: 400 }
       );
     }
@@ -127,7 +129,56 @@ export async function POST(
       );
     }
 
-    // 6. Verify that the storage object actually exists at expected path
+    // 6. Idempotency Check:
+    // A material is idempotently reusable ONLY when the existing record matches the same logical upload:
+    // - materialId
+    // - authenticated user
+    // - projectId
+    // - exact filePath
+    //
+    // If materialId matches but filePath differs, this is NOT an idempotent retry;
+    // it must return a conflict (409) rather than returning the existing material.
+    // Similarly, if filePath is already referenced by an existing material with a different materialId,
+    // it is also a conflict (409) and the existing storage object must never be overwritten/deleted.
+    //
+    // We execute separate .eq() lookups to avoid interpolating raw filePaths into PostgREST filter strings,
+    // which can fail on filenames containing commas, parentheses, or filter delimiters.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: materialById } = await (supabase.from("materials") as any)
+      .select()
+      .eq("project_id", projectId)
+      .eq("user_id", user.id)
+      .eq("id", materialId)
+      .maybeSingle();
+
+    if (materialById) {
+      if (materialById.file_path === filePath) {
+        // True idempotent retry: exact same upload (materialId, project_id, user_id, filePath)
+        return NextResponse.json({ material: materialById }, { status: 200 });
+      }
+      // Same materialId but different filePath: conflict, not an idempotent retry
+      return NextResponse.json(
+        { error: "Conflict: a material with this ID already exists with a different file path" },
+        { status: 409 }
+      );
+    }
+
+    const { data: materialByPath } = await (supabase.from("materials") as any)
+      .select()
+      .eq("project_id", projectId)
+      .eq("user_id", user.id)
+      .eq("file_path", filePath)
+      .maybeSingle();
+
+    if (materialByPath) {
+      // Same filePath already referenced by an existing material (different materialId)
+      return NextResponse.json(
+        { error: "Conflict: this storage file path is already referenced by an existing material" },
+        { status: 409 }
+      );
+    }
+
+    // 7. Verify that the storage object actually exists at expected path
     const adminSupabase = createAdminClient();
     let fileExists = false;
 
@@ -162,7 +213,7 @@ export async function POST(
       );
     }
 
-    // 7. Insert row into materials table
+    // 8. Insert row into materials table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: material, error: insertError } = await (supabase.from("materials") as any)
       .insert({
@@ -179,16 +230,48 @@ export async function POST(
       .single();
 
     if (insertError) {
-      console.error("[finalize] DB insert failed, cleaning up storage object:", insertError);
-      // Clean up orphaned storage object
-      await adminSupabase.storage.from("materials").remove([filePath]);
+      console.error("[finalize] DB insert failed:", insertError);
+
+      // Verify if a material record already references this exact filePath.
+      // The authoritative condition for whether a storage object is referenced is exact file_path match.
+      // A record with matching materialId but differing file_path does NOT reference this storage object.
+      // Never delete a Storage object that is already referenced by an existing material record.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: referencingMaterial } = await (adminSupabase.from("materials") as any)
+        .select()
+        .eq("file_path", filePath)
+        .maybeSingle();
+
+      if (referencingMaterial) {
+        if (
+          referencingMaterial.id === materialId &&
+          referencingMaterial.project_id === projectId &&
+          referencingMaterial.user_id === user.id
+        ) {
+          // Idempotent recovery: material already exists for this exact upload, return safely
+          return NextResponse.json({ material: referencingMaterial }, { status: 200 });
+        }
+        // Referencing material exists (e.g. different materialId or project), do NOT delete Storage
+        return NextResponse.json(
+          { error: `Failed to create record: ${insertError.message}` },
+          { status: 500 }
+        );
+      }
+
+      // Safe orphan cleanup: only clean up if no material record references the Storage object
+      try {
+        await adminSupabase.storage.from("materials").remove([filePath]);
+      } catch (cleanupErr) {
+        console.warn("[finalize] Failed to clean up orphaned storage object:", cleanupErr);
+      }
+
       return NextResponse.json(
         { error: `Failed to create record: ${insertError.message}` },
         { status: 500 }
       );
     }
 
-    // 8. Fire Inngest event for background AI processing
+    // 9. Fire Inngest event for background AI processing
     let finalMaterial = material;
     try {
       await inngest.send({
@@ -247,3 +330,109 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+/**
+ * DELETE /api/projects/[projectId]/materials/finalize
+ * Explicit safe-cleanup contract for orphaned storage objects.
+ * Guarantees that a storage object is NEVER deleted if an existing material record references it.
+ */
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ projectId: string }> }
+) {
+  try {
+    const { projectId } = await params;
+    const supabase = await createServerClient();
+
+    // 1. Authenticate user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 2. Verify project ownership
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: project } = await (supabase.from("projects") as any)
+      .select("id")
+      .eq("id", projectId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // 3. Read body
+    let body: { materialId?: string; filePath?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON payload" },
+        { status: 400 }
+      );
+    }
+
+    const { materialId, filePath } = body;
+    if (
+      !materialId ||
+      !filePath ||
+      typeof materialId !== "string" ||
+      typeof filePath !== "string"
+    ) {
+      return NextResponse.json(
+        { error: "Valid materialId and filePath are required" },
+        { status: 400 }
+      );
+    }
+
+    // 4. Validate storage path
+    const isPathValid = validateStoragePath({
+      filePath,
+      userId: user.id,
+      projectId,
+      materialId,
+    });
+
+    if (!isPathValid) {
+      return NextResponse.json(
+        { error: "Invalid or unauthorized storage file path" },
+        { status: 400 }
+      );
+    }
+
+    // 5. Check if any material record references this exact storage object path.
+    // The authoritative condition for whether a storage object is referenced is exact file_path match.
+    // A record with matching materialId but differing file_path does NOT reference this storage object.
+    const adminSupabase = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: referencingMaterial } = await (adminSupabase.from("materials") as any)
+      .select("id")
+      .eq("file_path", filePath)
+      .maybeSingle();
+
+    if (referencingMaterial) {
+      // NEVER delete a storage object that is referenced by an existing material record
+      return NextResponse.json(
+        { error: "Cannot delete: storage object is referenced by an existing material record" },
+        { status: 409 }
+      );
+    }
+
+    // 6. Safe to clean up orphaned storage object
+    await adminSupabase.storage.from("materials").remove([filePath]);
+
+    return NextResponse.json(
+      { success: true, message: "Orphaned storage object cleaned up" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[finalize-cleanup] Unexpected error:", error);
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+

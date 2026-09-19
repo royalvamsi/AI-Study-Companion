@@ -92,6 +92,67 @@ export function resolveCanonicalFileType(fileName: string, mimeType?: string): s
 }
 
 /**
+ * Validates that a filename is safe against directory traversal:
+ * - Rejects dangerous path segments such as "." and ".."
+ * - Rejects "/" and "\" path separators
+ * - Rejects URL-encoded path separators (%2f, %5c) and encoded traversal segments (%2e, %2e%2e)
+ * - Rejects null bytes (\0, %00)
+ * - Allows literal percent signs (e.g. "lecture%notes.pdf", "100%_accuracy.pdf", "chapter%2.pdf")
+ * - Allows legitimate consecutive dots inside filenames (e.g. "lecture..pdf", "v1..notes.md")
+ */
+export function isSafeFileName(fileName: string): boolean {
+  if (!fileName || typeof fileName !== "string") return false;
+  const trimmed = fileName.trim();
+  if (!trimmed) return false;
+
+  // Reject null bytes
+  if (trimmed.includes("\0") || /%00/i.test(trimmed)) return false;
+
+  // Reject raw "/" and "\" path separators
+  if (trimmed.includes("/") || trimmed.includes("\\")) return false;
+
+  // Reject dangerous path segments "." and ".."
+  if (trimmed === "." || trimmed === "..") return false;
+
+  // Reject encoded path separators: %2f (/) and %5c (\) including multi-encoded variants
+  if (/%(?:25)*2f/i.test(trimmed) || /%(?:25)*5c/i.test(trimmed)) {
+    return false;
+  }
+
+  // Check for encoded traversal segments:
+  // Selectively decodes valid %XX sequences so literal percent signs (%_ or %n or %2.)
+  // do not cause URIError or rejection.
+  const decoded = trimmed.replace(/%([0-9a-fA-F]{2})/g, (_, hex) => {
+    return String.fromCharCode(parseInt(hex, 16));
+  });
+
+  // Reject if an encoded slash or backslash or null byte was produced
+  if (decoded.includes("/") || decoded.includes("\\") || decoded.includes("\0")) {
+    return false;
+  }
+
+  // Reject if decoded filename forms dangerous traversal segments "." or ".."
+  if (decoded === "." || decoded === "..") {
+    return false;
+  }
+
+  // Second-pass check for double-encoded traversal (e.g. %252e%252e -> %2e%2e -> ..)
+  const doubleDecoded = decoded.replace(/%([0-9a-fA-F]{2})/g, (_, hex) => {
+    return String.fromCharCode(parseInt(hex, 16));
+  });
+
+  if (doubleDecoded.includes("/") || doubleDecoded.includes("\\") || doubleDecoded.includes("\0")) {
+    return false;
+  }
+
+  if (doubleDecoded === "." || doubleDecoded === "..") {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Generates the canonical storage path for study materials:
  * `${userId}/${projectId}/${materialId}/${cleanFileName}`
  */
@@ -108,6 +169,7 @@ export function generateStoragePath(
 /**
  * Validates that an uploaded storage path strictly matches the authorized user,
  * project, and material ID to prevent path traversal or cross-user overwrites.
+ * Enforces strict 4-segment structure: `${userId}/${projectId}/${materialId}/${safeFileName}`.
  */
 export function validateStoragePath({
   filePath,
@@ -125,18 +187,33 @@ export function validateStoragePath({
   if (!filePath || typeof filePath !== "string") return false;
   if (!isValidUUID(projectId) || !isValidUUID(materialId)) return false;
 
-  const parts = filePath.split("/");
-  if (parts.length < 4) return false;
+  // Reject backslashes anywhere in the storage path
+  if (filePath.includes("\\")) return false;
 
-  const [pathUserId, pathProjectId, pathMaterialId, ...rest] = parts;
+  const parts = filePath.split("/");
+  // Must strictly be 4 segments: userId / projectId / materialId / fileName
+  if (parts.length !== 4) return false;
+
+  // Reject empty segments or dangerous path traversal segments in any position
+  for (const segment of parts) {
+    if (!segment || segment === "." || segment === "..") {
+      return false;
+    }
+  }
+
+  const [pathUserId, pathProjectId, pathMaterialId, pathFileName] = parts;
   if (pathUserId !== userId) return false;
   if (pathProjectId !== projectId) return false;
   if (pathMaterialId !== materialId) return false;
 
-  const pathFileName = rest.join("/");
-  if (!pathFileName || pathFileName.includes("..")) return false;
+  if (!isSafeFileName(pathFileName)) {
+    return false;
+  }
 
   if (fileName) {
+    if (!isSafeFileName(fileName)) {
+      return false;
+    }
     const cleanExpectedName = fileName.replace(/[\\/]/g, "_").trim();
     if (pathFileName !== cleanExpectedName && pathFileName !== fileName) {
       return false;
