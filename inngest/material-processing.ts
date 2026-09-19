@@ -166,6 +166,34 @@ export async function handleMaterialProcessingFailure({
   return { materialId, status: "failed", errorMessage: userSafeMessage };
 }
 
+/**
+ * Verifies whether a material record still exists in the database.
+ * - Returns true if the material exists.
+ * - Returns false if the material was deleted / no row exists (and no query error occurred).
+ * - Throws an Error if a database/network error occurs so Inngest can retry.
+ */
+export async function isMaterialPresent(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  materialId: string
+): Promise<boolean> {
+  const checkQuery = supabase.from("materials").select("id").eq("id", materialId);
+  const { data, error } =
+    typeof checkQuery.maybeSingle === "function"
+      ? await checkQuery.maybeSingle()
+      : await checkQuery.single();
+
+  if (error) {
+    // When using .single() fallback/mocks, PGRST116 indicates 0 rows found (not a database failure)
+    if (error.code === "PGRST116" || error.message?.includes("0 rows")) {
+      return false;
+    }
+    throw new Error(`Failed to check material existence for ${materialId}: ${error.message}`);
+  }
+
+  return Boolean(data);
+}
+
 export async function executeProcessMaterialStep1({
   materialId,
   projectId,
@@ -181,14 +209,32 @@ export async function executeProcessMaterialStep1({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any;
 }): Promise<boolean> {
-  const { data: existing, error: fetchError } = await supabase
+  const query = supabase
     .from("materials")
     .select("status")
-    .eq("id", materialId)
-    .single();
+    .eq("id", materialId);
 
-  if (fetchError || !existing) {
-    throw new Error(`Material ${materialId} not found: ${fetchError?.message}`);
+  const { data: existing, error: fetchError } =
+    typeof query.maybeSingle === "function"
+      ? await query.maybeSingle()
+      : await query.single();
+
+  if (fetchError) {
+    // When using .single() fallback/mocks, PGRST116 indicates 0 rows found
+    if (fetchError.code === "PGRST116" || fetchError.message?.includes("0 rows")) {
+      console.warn(
+        `[processMaterial] Skipping run for material ${materialId}; record not found or already deleted`
+      );
+      return false;
+    }
+    throw new Error(`Failed to fetch material ${materialId}: ${fetchError.message}`);
+  }
+
+  if (!existing) {
+    console.warn(
+      `[processMaterial] Skipping run for material ${materialId}; record not found or already deleted`
+    );
+    return false;
   }
 
   // Defensive check: short-circuit if already processing or ready
@@ -434,6 +480,13 @@ export const processMaterial = inngest.createFunction(
 
     // ── Step 4: Search/Retrieval Representation (Embeddings & Storage) ─────
     await step.run("generate-and-store-chunks", async () => {
+      // Race condition protection: ensure material still exists before writing chunks
+      const materialExists = await isMaterialPresent(supabase, materialId);
+      if (!materialExists) {
+        console.warn(`[processMaterial] Skipping chunk storage: material ${materialId} was deleted`);
+        return;
+      }
+
       const texts = chunks.map((c) => c.content);
       const embeddings = await generateEmbeddings(texts, { userId, projectId });
 
@@ -455,6 +508,13 @@ export const processMaterial = inngest.createFunction(
 
     // ── Step 7: Extract concepts via LLM ─────────────────────────────────────
     await step.run("extract-concepts", async () => {
+      // Race condition protection: ensure material still exists before creating concepts
+      const materialExists = await isMaterialPresent(supabase, materialId);
+      if (!materialExists) {
+        console.warn(`[processMaterial] Skipping concept extraction: material ${materialId} was deleted`);
+        return;
+      }
+
       const fullText = extractedPages.pages.map((p: { text: string; pageNumber: number }) => p.text).join("\n\n");
       const preview = fullText.slice(0, 8000);
 
@@ -494,6 +554,13 @@ export const processMaterial = inngest.createFunction(
 
     // ── Step 8: Mark ready ───────────────────────────────────────────────────
     await step.run("mark-ready", async () => {
+      // Race condition protection: ensure material still exists before updating status
+      const materialExists = await isMaterialPresent(supabase, materialId);
+      if (!materialExists) {
+        console.warn(`[processMaterial] Skipping mark-ready: material ${materialId} was deleted`);
+        return;
+      }
+
       await supabase
         .from("materials")
         .update({ status: "ready" })
