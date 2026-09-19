@@ -27,9 +27,11 @@ export async function retrieveChunks(
   options?: {
     matchCount?: number;
     userId?: string;
+    materialId?: string;
   }
 ): Promise<RetrievedChunk[]> {
-  const matchCount = options?.matchCount ?? 8;
+  const targetMatchCount = options?.matchCount ?? 8;
+  const fetchCount = options?.materialId ? Math.max(targetMatchCount * 5, 40) : targetMatchCount;
 
   // 1. Embed the query
   const embedding = await generateEmbedding(query, {
@@ -43,13 +45,13 @@ export async function retrieveChunks(
   const { data, error } = await (supabase.rpc as any)("match_chunks", {
     query_embedding: embedding,
     match_project_id: projectId,
-    match_count: matchCount,
+    match_count: fetchCount,
     match_threshold: PARTIAL_THRESHOLD,
   });
 
   if (error) throw new Error(`RAG retrieval failed: ${error.message}`);
 
-  return ((data ?? []) as Array<{
+  const allChunks = ((data ?? []) as Array<{
     id: string;
     material_id: string;
     content: string;
@@ -62,6 +64,14 @@ export async function retrieveChunks(
     pageNumber: row.page_number,
     similarity: row.similarity,
   }));
+
+  if (options?.materialId) {
+    return allChunks
+      .filter((chunk) => chunk.materialId === options.materialId)
+      .slice(0, targetMatchCount);
+  }
+
+  return allChunks.slice(0, targetMatchCount);
 }
 
 /**

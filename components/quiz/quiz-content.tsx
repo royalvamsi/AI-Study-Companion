@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,6 +81,7 @@ interface QuizContentProps {
   materials: MaterialItem[];
   activeProjectId: string | null;
   activeMaterialId?: string | null;
+  validationNotice?: string | null;
   userId: string;
 }
 
@@ -88,9 +90,17 @@ export function QuizContent({
   materials,
   activeProjectId,
   activeMaterialId,
+  validationNotice,
 }: QuizContentProps) {
+  const router = useRouter();
   const [selectedProject, setSelectedProject] = useState(activeProjectId ?? "");
   const [selectedMaterial, setSelectedMaterial] = useState<string>(activeMaterialId ?? "ALL");
+  const [dismissedNotice, setDismissedNotice] = useState(false);
+
+  useEffect(() => {
+    setSelectedProject(activeProjectId ?? "");
+    setSelectedMaterial(activeMaterialId ?? "ALL");
+  }, [activeProjectId, activeMaterialId]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -244,6 +254,20 @@ export function QuizContent({
           </p>
         </div>
 
+        {validationNotice && !dismissedNotice && (
+          <Alert className="border-amber-200 bg-amber-50 text-amber-900 text-xs py-3 rounded-2xl font-sans flex items-center justify-between">
+            <AlertDescription className="text-amber-900">{validationNotice}</AlertDescription>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDismissedNotice(true)}
+              className="h-6 px-2 text-amber-700 hover:text-amber-900 text-xs cursor-pointer"
+            >
+              Dismiss
+            </Button>
+          </Alert>
+        )}
+
         {quizError && (
           <Alert className="border-rose-200 bg-rose-50 text-rose-800 text-xs py-3 rounded-2xl font-sans">
             <AlertDescription>{quizError}</AlertDescription>
@@ -270,8 +294,14 @@ export function QuizContent({
               <Select
                 value={selectedProject}
                 onValueChange={(v) => {
-                  setSelectedProject(v ?? "");
+                  const nextProj = v ?? "";
+                  setSelectedProject(nextProj);
                   setSelectedMaterial("ALL");
+                  if (nextProj) {
+                    router.push(`/quiz?projectId=${nextProj}`);
+                  } else {
+                    router.push("/quiz");
+                  }
                 }}
               >
                 <SelectTrigger className="w-full sm:flex-1 bg-white border border-black/15 text-ink text-xs h-11 rounded-xl px-3 hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
@@ -297,7 +327,15 @@ export function QuizContent({
               {projectMaterials.length > 0 && (
                 <Select
                   value={selectedMaterial}
-                  onValueChange={(v) => setSelectedMaterial(v ?? "ALL")}
+                  onValueChange={(v) => {
+                    const nextMat = v ?? "ALL";
+                    setSelectedMaterial(nextMat);
+                    if (nextMat !== "ALL") {
+                      router.push(`/quiz?projectId=${selectedProject}&materialId=${nextMat}`);
+                    } else {
+                      router.push(`/quiz?projectId=${selectedProject}`);
+                    }
+                  }}
                 >
                   <SelectTrigger className="w-full sm:flex-1 bg-white border border-black/15 text-ink text-xs h-11 rounded-xl px-3 hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
                     <SelectValue placeholder="All Materials">

@@ -32,6 +32,18 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const supabase = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: project } = await (supabase.from("projects") as any)
+      .select("id")
+      .eq("id", projectId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found or unauthorized" }, { status: 404 });
+    }
+
     const learningContext = await getPersistentLearningContext(user.id, projectId);
     const openingMessage = await generateTutorOpeningMessage(user.id, projectId, learningContext);
 
@@ -60,19 +72,50 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const parsed = TutorMessageSchema.safeParse({ ...body, projectId });
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { message, conversationId } = parsed.data;
+    const { message, conversationId, materialId } = parsed.data;
     const supabase = createAdminClient();
 
-    // 1. Retrieve relevant RAG chunks — scoped strictly to this project
+    // Verify project access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: project } = await (supabase.from("projects") as any)
+      .select("id, name")
+      .eq("id", projectId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found or unauthorized" }, { status: 404 });
+    }
+
+    // Verify material access if specified
+    if (materialId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: material } = await (supabase.from("materials") as any)
+        .select("id, file_name, status")
+        .eq("id", materialId)
+        .eq("project_id", projectId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!material) {
+        return NextResponse.json(
+          { error: "Material not found in project or unauthorized" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // 1. Retrieve relevant RAG chunks — scoped strictly to this project (and target material if specified)
     const retrievedChunks = await retrieveChunks(message, projectId, {
       userId: user.id,
       matchCount: 6,
+      materialId: materialId ?? undefined,
     });
 
     // 2. Build citations and determine evidence state

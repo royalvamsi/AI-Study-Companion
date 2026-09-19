@@ -48,12 +48,14 @@ interface Citation {
 interface ProjectOption {
   id: string;
   name: string;
-  materials?: Array<{ id: string; status: string; file_name: string }>;
+  materials?: Array<{ id: string; status: string; file_name: string; page_count?: number | null }>;
 }
 
 interface TutorChatProps {
   projects: ProjectOption[];
   activeProjectId: string | null;
+  activeMaterialId?: string | null;
+  validationNotice?: string | null;
   conversationId: string | null;
   initialMessages: Message[];
   initialOpeningGreeting?: string | null;
@@ -91,11 +93,22 @@ const STARTER_PROMPTS = [
 export function TutorChat({
   projects,
   activeProjectId,
+  activeMaterialId,
+  validationNotice,
   conversationId,
   initialMessages,
   initialOpeningGreeting,
 }: TutorChatProps) {
   const router = useRouter();
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string>(
+    activeMaterialId ?? "ALL"
+  );
+  const [dismissedNotice, setDismissedNotice] = useState(false);
+
+  useEffect(() => {
+    setSelectedMaterialId(activeMaterialId ?? "ALL");
+  }, [activeMaterialId, activeProjectId]);
+
   const [messages, setMessages] = useState<
     Array<{
       role: string;
@@ -129,7 +142,7 @@ export function TutorChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth" });
   }, [messages, isStreaming]);
 
   useEffect(() => {
@@ -157,8 +170,13 @@ export function TutorChat({
   }, [initialMessages, initialOpeningGreeting]);
 
   const activeProject = projects.find((p) => p.id === activeProjectId);
-  const readyDocsCount =
-    activeProject?.materials?.filter((m) => m.status === "ready").length ?? 0;
+  const readyMaterials =
+    activeProject?.materials?.filter((m) => m.status === "ready") ?? [];
+  const readyDocsCount = readyMaterials.length;
+  const activeMaterial =
+    selectedMaterialId !== "ALL"
+      ? readyMaterials.find((m) => m.id === selectedMaterialId)
+      : null;
 
   const sendMessage = useCallback(
     async (textToSend: string) => {
@@ -176,6 +194,10 @@ export function TutorChat({
           body: JSON.stringify({
             message: userMessage,
             conversationId,
+            materialId:
+              selectedMaterialId && selectedMaterialId !== "ALL"
+                ? selectedMaterialId
+                : undefined,
           }),
         });
 
@@ -265,13 +287,28 @@ export function TutorChat({
         setIsStreaming(false);
       }
     },
-    [activeProjectId, conversationId, isStreaming]
+    [activeProjectId, conversationId, isStreaming, selectedMaterialId]
   );
 
   const handleSend = () => sendMessage(input);
 
   return (
     <div className="flex flex-col h-full bg-[#F5F3EE] text-ink font-sans">
+      {/* Non-sensitive Context Validation Notice */}
+      {validationNotice && !dismissedNotice && (
+        <div className="border-b hairline bg-amber-50/80 border-amber-200/80 px-4 sm:px-6 lg:px-10 py-2.5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs text-amber-900 font-sans">
+            <span>{validationNotice}</span>
+            <button
+              onClick={() => setDismissedNotice(true)}
+              className="text-amber-700 hover:text-amber-900 font-semibold cursor-pointer shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tutor Workspace Header */}
       <div className="border-b hairline bg-[#F5F3EE] shrink-0">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-10 py-4 sm:py-5">
@@ -304,26 +341,34 @@ export function TutorChat({
                 <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-white border border-black/10 text-neutral-600 font-medium font-sans hidden sm:inline-flex">
                   Document-Grounded
                 </span>
+                {activeMaterial && (
+                  <span className="inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full bg-orange/10 border border-orange/20 text-orange font-medium font-sans">
+                    <FileText className="h-3 w-3 mr-1" />
+                    {activeMaterial.file_name}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-neutral-500 font-sans mt-0.5">
                 {activeProject
-                  ? readyDocsCount > 0
-                    ? `${readyDocsCount} document${readyDocsCount > 1 ? "s" : ""} indexed & cited`
-                    : "Upload a PDF material in this project for grounded retrieval"
+                  ? activeMaterial
+                    ? `Scoped to ${activeMaterial.file_name} (${activeMaterial.page_count ? `${activeMaterial.page_count} pages` : "indexed"})`
+                    : readyDocsCount > 0
+                      ? `${readyDocsCount} document${readyDocsCount > 1 ? "s" : ""} indexed & cited`
+                      : "Upload a PDF material in this project for grounded retrieval"
                   : "Select a project to start learning"}
               </p>
             </div>
           </div>
 
-          {/* Project Selector - Strictly preserves project name rendering */}
-          <div className="flex items-center gap-2">
+          {/* Project & Material Selectors */}
+          <div className="flex flex-wrap items-center gap-2">
             <Select
               value={activeProjectId ?? ""}
               onValueChange={(v) => {
-                if (v) router.push(`/tutor?project=${v}`);
+                if (v) router.push(`/tutor?projectId=${v}`);
               }}
             >
-              <SelectTrigger className="w-52 sm:w-64 bg-white border border-black/15 text-ink text-xs h-10 px-3 rounded-xl hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
+              <SelectTrigger className="w-48 sm:w-56 bg-white border border-black/15 text-ink text-xs h-10 px-3 rounded-xl hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
                 <SelectValue placeholder="Select study project">
                   {(val: string | null) => {
                     const targetId = val || activeProjectId;
@@ -341,6 +386,41 @@ export function TutorChat({
                 ))}
               </SelectContent>
             </Select>
+
+            {activeProject && readyMaterials.length > 0 && (
+              <Select
+                value={selectedMaterialId}
+                onValueChange={(v) => {
+                  setSelectedMaterialId(v ?? "ALL");
+                  if (v && v !== "ALL") {
+                    router.push(`/tutor?projectId=${activeProjectId}&materialId=${v}`);
+                  } else {
+                    router.push(`/tutor?projectId=${activeProjectId}`);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-44 sm:w-52 bg-white border border-black/15 text-ink text-xs h-10 px-3 rounded-xl hover:border-black/30 focus:border-orange focus:ring-1 focus:ring-orange shadow-xs cursor-pointer font-sans transition-colors">
+                  <SelectValue placeholder="All Materials">
+                    {(val: string | null) => {
+                      const cur = val || selectedMaterialId;
+                      if (cur === "ALL") return "All Materials (Combined)";
+                      const m = readyMaterials.find((mat) => mat.id === cur);
+                      return m?.file_name ?? "Select material";
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-black/10 text-ink shadow-lg rounded-xl font-sans">
+                  <SelectItem value="ALL" className="text-xs cursor-pointer">
+                    All Materials (Combined)
+                  </SelectItem>
+                  {readyMaterials.map((m) => (
+                    <SelectItem key={m.id} value={m.id} className="text-xs cursor-pointer">
+                      {m.file_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       </div>
@@ -372,10 +452,12 @@ export function TutorChat({
 
               <div className="space-y-2">
                 <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal text-ink tracking-tight">
-                  {activeProject?.name} Workspace
+                  {activeMaterial ? activeMaterial.file_name : `${activeProject?.name} Workspace`}
                 </h2>
                 <p className="text-xs sm:text-sm text-neutral-500 max-w-lg leading-relaxed font-sans mx-auto">
-                  Ask any question about this project&apos;s materials. The AI strictly cites evidence from your uploaded documents and notifies you if evidence is insufficient.
+                  {activeMaterial
+                    ? `Ask any question about this document. The AI strictly cites evidence from "${activeMaterial.file_name}".`
+                    : "Ask any question about this project's materials. The AI strictly cites evidence from your uploaded documents and notifies you if evidence is insufficient."}
                 </p>
               </div>
 
@@ -533,7 +615,11 @@ export function TutorChat({
                       <div className="pt-2 flex items-center justify-between text-[11px] text-neutral-500 font-sans border-t hairline mt-3">
                         <span>Understood this explanation?</span>
                         <Link
-                          href={`/quiz?project=${activeProjectId}`}
+                          href={
+                            activeMaterial
+                              ? `/quiz?projectId=${activeProjectId}&materialId=${activeMaterial.id}`
+                              : `/quiz?projectId=${activeProjectId}`
+                          }
                           className="text-orange hover:text-[#D44F19] hover:underline font-medium inline-flex items-center gap-1.5 transition-colors"
                         >
                           <ClipboardCheck className="h-3.5 w-3.5 text-orange" />
@@ -570,7 +656,11 @@ export function TutorChat({
                     handleSend();
                   }
                 }}
-                placeholder="Ask a question grounded in your study documents… (Enter to send, Shift+Enter for newline)"
+                placeholder={
+                  activeMaterial
+                    ? `Ask a question grounded in ${activeMaterial.file_name}… (Enter to send, Shift+Enter for newline)`
+                    : "Ask a question grounded in your study documents… (Enter to send, Shift+Enter for newline)"
+                }
                 rows={1}
                 className="flex-1 bg-transparent border-0 text-ink text-xs sm:text-sm placeholder:text-neutral-400 resize-none min-h-[44px] max-h-[160px] p-2.5 focus-visible:ring-0 focus-visible:border-0 shadow-none font-sans leading-relaxed"
                 disabled={isStreaming}
