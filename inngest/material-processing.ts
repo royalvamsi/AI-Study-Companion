@@ -97,6 +97,9 @@ export function sanitizeMaterialErrorMessage(rawMessage?: string): string {
   if (rawMessage.includes("Empty or corrupt text file") || rawMessage.includes("contains no extractable text")) {
     return "The document contains no readable text. Please provide a file with valid text content.";
   }
+  if (rawMessage.includes("Concept extraction failed")) {
+    return "Concept extraction failed due to an AI service error. Please try reprocessing the document.";
+  }
   if (rawMessage.length <= 250 && !rawMessage.includes("SELECT") && !rawMessage.includes("INSERT") && !rawMessage.includes("at ")) {
     return rawMessage;
   }

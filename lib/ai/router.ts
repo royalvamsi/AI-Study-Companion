@@ -8,17 +8,26 @@ import { GeminiProvider } from "./gemini";
  * - Lightweight generation & Concept extraction: Gemini 2.5 Flash-Lite
  * - Embeddings: Gemini Embedding
  */
+function normalizeModelName(val: string | undefined, defaultVal: string): string {
+  if (!val) return defaultVal;
+  const trimmed = val.trim();
+  if (trimmed === "gemini-3.5-flash-lit" || trimmed === "gemini-2.5-flash-lit") {
+    return trimmed + "e";
+  }
+  return trimmed || defaultVal;
+}
+
 export const AI_MODELS = {
   /** AI Tutor conversational & streaming interactions */
-  tutor: process.env.TUTOR_MODEL || "gemini-3.5-flash",
+  tutor: normalizeModelName(process.env.TUTOR_MODEL, "gemini-3.5-flash"),
   /** Open-ended assessment reasoning and question grading */
-  assessment: process.env.ASSESSMENT_MODEL || "gemini-3.5-flash",
+  assessment: normalizeModelName(process.env.ASSESSMENT_MODEL, "gemini-3.5-flash"),
   /** Adaptive quiz generation */
-  fast: process.env.FAST_MODEL || "gemini-3.5-flash-lite",
+  fast: normalizeModelName(process.env.FAST_MODEL, "gemini-3.5-flash-lite"),
   /** Rapid concept extraction from uploaded study materials */
-  extraction: process.env.EXTRACTION_MODEL || "gemini-3.5-flash-lite",
+  extraction: normalizeModelName(process.env.EXTRACTION_MODEL, "gemini-3.5-flash-lite"),
   /** Vector embeddings for pgvector RAG */
-  embedding: process.env.EMBEDDING_MODEL || "gemini-embedding-001",
+  embedding: normalizeModelName(process.env.EMBEDDING_MODEL, "gemini-embedding-001"),
 } as const;
 
 /**

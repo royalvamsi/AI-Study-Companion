@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { generateQuizQuestions } from "@/lib/ai/quiz";
 import { selectAdaptiveConcepts } from "@/lib/learning/adaptive-selection";
+import { resolveConceptForQuestion } from "@/lib/learning/concept-resolver";
 
 // Forbidden meta-keywords that belong to product architecture, not learner curriculum
 const FORBIDDEN_META_KEYWORDS = [
@@ -274,6 +275,8 @@ export async function POST(
       .join("\n");
 
     // ── 6. Generate Grounded Questions via Gemini (Anti-Duplicate Guard) ─────
+    const candidateConcepts = materialConcepts.map((c) => ({ id: c.id, name: c.name }));
+
     const generatedQuestions = await generateQuizQuestions({
       userId: user.id,
       projectId,
@@ -283,6 +286,7 @@ export async function POST(
       difficultyInstructions: difficultyInstructions || "General foundation",
       contextStr,
       recentQuestionTexts,
+      availableConcepts: candidateConcepts,
     });
 
     if (generatedQuestions.length === 0) {
@@ -308,25 +312,42 @@ export async function POST(
       return NextResponse.json({ error: "Failed to create assessment record" }, { status: 500 });
     }
 
-    const conceptNameMap = new Map(materialConcepts.map((c) => [c.name.toLowerCase(), c.id]));
+    let unmappedCount = 0;
+    const questionRows = generatedQuestions.map((q) => {
+      const resolution = resolveConceptForQuestion(q.concept_name, candidateConcepts);
+      if (!resolution.conceptId) {
+        unmappedCount++;
+      }
 
-    const questionRows = generatedQuestions.map((q) => ({
-      assessment_id: assessment.id,
-      concept_id: conceptNameMap.get(q.concept_name.toLowerCase()) ?? null,
-      question_type: q.question_type,
-      question_text: q.question_text,
-      options: q.question_type === "mcq" ? q.options : null,
-      correct_answer: q.correct_answer,
-      difficulty: q.difficulty,
-      llm_response: {
-        ...q,
-        material_id: targetMaterial.id,
-        material_file_name: targetMaterial.file_name,
-        source_page: q.source_page ?? null,
-        hint: q.hint,
-        explanation: q.explanation,
-      },
-    }));
+      return {
+        assessment_id: assessment.id,
+        concept_id: resolution.conceptId,
+        question_type: q.question_type,
+        question_text: q.question_text,
+        options: q.question_type === "mcq" ? q.options : null,
+        correct_answer: q.correct_answer,
+        difficulty: q.difficulty,
+        llm_response: {
+          ...q,
+          material_id: targetMaterial.id,
+          material_file_name: targetMaterial.file_name,
+          source_page: q.source_page ?? null,
+          hint: q.hint,
+          explanation: q.explanation,
+          concept_resolution: resolution,
+        },
+      };
+    });
+
+    if (candidateConcepts.length > 0 && unmappedCount > 0) {
+      console.warn(
+        `[QuizGenerate] Observability Warning: ${unmappedCount}/${generatedQuestions.length} questions could not be linked to a known concept in project "${project.name}" (${projectId}).`
+      );
+    } else if (candidateConcepts.length === 0) {
+      console.warn(
+        `[QuizGenerate] Observability Warning: Target material "${targetMaterial.file_name}" in project "${project.name}" has 0 concepts. All ${generatedQuestions.length} questions have concept_id = null.`
+      );
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: insertedQuestions } = await (supabase.from("assessment_questions") as any)
