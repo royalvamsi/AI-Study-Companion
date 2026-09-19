@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { gradeOpenEndedAnswer } from "@/lib/ai/grading";
 import { inngest } from "@/inngest/client";
-import { updateMasteryAfterAssessment, ConceptMasteryDelta } from "@/lib/learning/mastery";
+import { updateMasteryAfterAssessment, recoverAssessmentConcepts, ConceptMasteryDelta } from "@/lib/learning/mastery";
 import { refreshAndGetTopRecommendation } from "@/lib/learning/recommendations";
 
 /**
@@ -150,11 +150,31 @@ export async function POST(
         .single();
 
       if (fullAssessment) {
-        masteryDeltas = await updateMasteryAfterAssessment(
-          fullAssessment,
-          user.id,
-          projectId
+        const hasUnlinked = fullAssessment.assessment_questions.some(
+          (q: { concept_id: string | null }) => !q.concept_id
         );
+
+        if (hasUnlinked) {
+          const recovery = await recoverAssessmentConcepts(assessmentId, projectId, user.id);
+          if (recovery.recoveredCount > 0) {
+            console.log(
+              `[QuizSubmit] Successfully recovered ${recovery.recoveredCount} concept links for assessment ${assessmentId}`
+            );
+            masteryDeltas = recovery.updatedDeltas;
+          } else {
+            masteryDeltas = await updateMasteryAfterAssessment(
+              fullAssessment,
+              user.id,
+              projectId
+            );
+          }
+        } else {
+          masteryDeltas = await updateMasteryAfterAssessment(
+            fullAssessment,
+            user.id,
+            projectId
+          );
+        }
       }
 
       newRecommendation = await refreshAndGetTopRecommendation(projectId, user.id);
