@@ -653,6 +653,37 @@ describe("Material Processing - Section 5: PPTX Static Import & Robust Extractio
     expect(newlyLingering).toHaveLength(0);
   });
 
+  it("attempts cleanup in finally block even if writeFile fails", async () => {
+    const fsPromises = await import("node:fs/promises");
+    const { extractTextFromBuffer } = await import("./material-processing");
+
+    let attemptedUnlinkPath: string | null = null;
+    const unlinkSpy = vi.spyOn(fsPromises.default, "unlink").mockImplementation(async (filePath) => {
+      attemptedUnlinkPath = String(filePath);
+      return Promise.resolve();
+    });
+
+    const writeFileSpy = vi.spyOn(fsPromises.default, "writeFile").mockImplementation(async () => {
+      throw new Error("Disk full or permission denied during writeFile");
+    });
+
+    try {
+      await expect(
+        extractTextFromBuffer({
+          buffer: Buffer.from("dummy"),
+          fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          fileName: "test.pptx",
+        })
+      ).rejects.toThrow();
+
+      expect(unlinkSpy).toHaveBeenCalledTimes(1);
+      expect(attemptedUnlinkPath).toMatch(/pptx-.*\.pptx$/);
+    } finally {
+      writeFileSpy.mockRestore();
+      unlinkSpy.mockRestore();
+    }
+  });
+
   it("does not leak storage paths or internal temp paths in error message", async () => {
     const { extractTextFromBuffer } = await import("./material-processing");
 

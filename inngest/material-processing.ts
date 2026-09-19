@@ -261,8 +261,8 @@ export async function extractTextFromBuffer({
       os.tmpdir(),
       `pptx-${Date.now()}-${Math.random().toString(36).slice(2)}.pptx`
     );
-    await fs.writeFile(tempFilePath, buffer);
     try {
+      await fs.writeFile(tempFilePath, buffer);
       const ParserConstructor: typeof PptxParser =
         typeof PptxParser === "function"
           ? PptxParser
