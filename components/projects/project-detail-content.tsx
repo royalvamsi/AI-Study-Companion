@@ -3,6 +3,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import {
+  resolveCanonicalFileType,
+  MAX_MATERIAL_FILE_SIZE,
+} from "@/lib/materials/validation";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -110,50 +115,114 @@ export function ProjectDetailContent({
   const handleUpload = useCallback(
     async (file: File) => {
       setUploadError(null);
-      const lowerName = file.name.toLowerCase();
-      const isAllowed =
-        file.type === "application/pdf" ||
-        file.type === "text/plain" ||
-        file.type === "text/markdown" ||
-        file.type === "text/x-markdown" ||
-        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
-        file.type === "application/docx" ||
-        file.type === "application/pptx" ||
-        lowerName.endsWith(".pdf") ||
-        lowerName.endsWith(".docx") ||
-        lowerName.endsWith(".pptx") ||
-        lowerName.endsWith(".txt") ||
-        lowerName.endsWith(".md") ||
-        lowerName.endsWith(".markdown");
+      const resolvedFileType = resolveCanonicalFileType(file.name, file.type);
 
-      if (!isAllowed) {
+      if (!resolvedFileType) {
         setUploadError(
           "Only PDF (.pdf), Word (.docx), PowerPoint (.pptx), Markdown (.md), and plain text (.txt) files are supported."
         );
         return;
       }
+
+      if (file.size > MAX_MATERIAL_FILE_SIZE) {
+        setUploadError("File too large. Maximum size is 50MB.");
+        return;
+      }
+
       setUploading(true);
+      let targetFilePath: string | null = null;
+      let storageUploadSucceeded = false;
+      const supabase = createClient();
+
       try {
-        const formData = new FormData();
-        formData.append("file", file);
+        // Step 1: Initialize upload and get signed upload target
+        const initRes = await fetch(
+          `/api/projects/${project.id}/materials/upload-url`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: file.name,
+              fileType: resolvedFileType,
+              fileSize: file.size,
+            }),
+          }
+        );
 
-        const res = await fetch(`/api/projects/${project.id}/materials`, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const err = await res
+        if (!initRes.ok) {
+          const err = await initRes
             .json()
-            .catch(() => ({ error: `Upload failed (HTTP ${res.status})` }));
-          setUploadError(err.error || "Material upload failed. Please try again.");
+            .catch(() => ({ error: `Upload initialization failed (${initRes.status})` }));
+          setUploadError(err.error || "Upload initialization failed. Please try again.");
+          return;
+        }
+
+        const { materialId, filePath, token, path } = await initRes.json();
+        targetFilePath = filePath;
+
+        // Step 2: Direct browser-to-storage upload (bypassing Vercel Function payload limits)
+        let storageError = null;
+
+        if (token && path) {
+          const { error } = await supabase.storage
+            .from("materials")
+            .uploadToSignedUrl(path, token, file, {
+              contentType: resolvedFileType,
+            });
+          storageError = error;
+        } else {
+          // Fallback to authenticated direct upload if signed token was not returned
+          const { error } = await supabase.storage
+            .from("materials")
+            .upload(filePath, file, {
+              contentType: resolvedFileType,
+              upsert: false,
+            });
+          storageError = error;
+        }
+
+        if (storageError) {
+          setUploadError(`Storage upload failed: ${storageError.message}`);
+          return;
+        }
+
+        storageUploadSucceeded = true;
+
+        // Step 3: Finalize metadata (small JSON payload)
+        const finalizeRes = await fetch(
+          `/api/projects/${project.id}/materials/finalize`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId,
+              fileName: file.name,
+              filePath,
+              fileType: resolvedFileType,
+              fileSize: file.size,
+            }),
+          }
+        );
+
+        if (!finalizeRes.ok) {
+          const err = await finalizeRes
+            .json()
+            .catch(() => ({ error: `Finalize failed (${finalizeRes.status})` }));
+          setUploadError(err.error || "Material finalization failed. Please try again.");
           return;
         }
 
         router.refresh();
       } catch (err) {
         console.error("Upload error:", err);
+        // If storage upload succeeded but finalize failed with network error, attempt client cleanup
+        if (storageUploadSucceeded && targetFilePath) {
+          try {
+            await supabase.storage.from("materials").remove([targetFilePath]);
+          } catch (cleanupErr) {
+            console.warn("Storage cleanup error:", cleanupErr);
+          }
+        }
         setUploadError(
           err instanceof Error
             ? err.message
