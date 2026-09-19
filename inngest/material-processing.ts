@@ -6,6 +6,11 @@ import { extractConcepts } from "@/lib/documents/concepts";
 import { emitActivityEvent, ActivityEventType } from "@/lib/activity/events";
 import { PDFParse } from "pdf-parse";
 import { getData as getPdfWorkerData } from "pdf-parse/worker";
+import PptxParser from "node-pptx-parser";
+import mammoth from "mammoth";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 // Polyfill browser globals required by pdfjs-dist / pdf-parse in Node runtime
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -226,13 +231,6 @@ export async function extractTextFromBuffer({
     };
   }
 
-  // Lazy-load dynamic native modules at runtime so Turbopack does not attempt to statically bundle optional package dependencies
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nativeRequire = typeof (globalThis as any).__non_webpack_require__ === "function"
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ? (globalThis as any).__non_webpack_require__
-    : eval("require");
-
   // Word (.docx) extraction branch
   const isDocx =
     fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
@@ -240,7 +238,6 @@ export async function extractTextFromBuffer({
     lowerName.endsWith(".docx");
 
   if (isDocx) {
-    const mammoth = nativeRequire("mammoth");
     const { value } = await mammoth.extractRawText({ buffer });
     const fullText = value ? value.trim() : "";
     if (fullText.length === 0) {
@@ -260,19 +257,17 @@ export async function extractTextFromBuffer({
     lowerName.endsWith(".pptx");
 
   if (isPptx) {
-    const fs = await import("node:fs/promises");
-    const os = await import("node:os");
-    const path = await import("node:path");
     const tempFilePath = path.join(
       os.tmpdir(),
       `pptx-${Date.now()}-${Math.random().toString(36).slice(2)}.pptx`
     );
     await fs.writeFile(tempFilePath, buffer);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pptxMod: any = nativeRequire("node-pptx-parser");
-      const PptxParser = pptxMod.default?.default || pptxMod.default || pptxMod;
-      const parser = new PptxParser(tempFilePath);
+      const ParserConstructor: typeof PptxParser =
+        typeof PptxParser === "function"
+          ? PptxParser
+          : ((PptxParser as unknown as { default: typeof PptxParser }).default || PptxParser);
+      const parser = new ParserConstructor(tempFilePath);
       const rawSlides = await parser.extractText();
 
       const pages: Array<{ text: string; pageNumber: number }> = [];
@@ -295,6 +290,13 @@ export async function extractTextFromBuffer({
         pages,
         pageCount: rawSlides.length || pages.length,
       };
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "PowerPoint presentation contains no extractable text.") {
+        throw err;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[extractTextFromBuffer] PPTX extraction failed:", message);
+      throw new Error("PowerPoint presentation contains no extractable text or is corrupted.");
     } finally {
       await fs.unlink(tempFilePath).catch(() => {});
     }
