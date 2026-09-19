@@ -63,6 +63,30 @@ describe("Material Processing - Section 1: onFailure Handling", () => {
     );
     expect(downloadMsg).toContain("Could not download");
 
+    const enospcMsg = sanitizeMaterialErrorMessage(
+      "Failed to stage temporary file: ENOSPC: no space left on device, write '/tmp/pptx-12345.pptx'"
+    );
+    expect(enospcMsg).toBe(
+      "Failed to process document due to a temporary file storage error. Please try again."
+    );
+    expect(enospcMsg).not.toContain("no readable text");
+    expect(enospcMsg).not.toContain("corrupted");
+    expect(enospcMsg).not.toContain("pptx-12345");
+
+    const stagingMsg = sanitizeMaterialErrorMessage(
+      "Failed to process document due to a temporary file storage error."
+    );
+    expect(stagingMsg).toBe(
+      "Failed to process document due to a temporary file storage error. Please try again."
+    );
+
+    const corruptPptxMsg = sanitizeMaterialErrorMessage(
+      "PowerPoint presentation contains no extractable text or is corrupted."
+    );
+    expect(corruptPptxMsg).toBe(
+      "The document contains no readable text. Please provide a file with valid text content."
+    );
+
     const fallbackMsg = sanitizeMaterialErrorMessage(
       "SELECT * FROM super_secret_internal_table WHERE error at file.ts:123:456"
     );
@@ -591,3 +615,206 @@ describe("Material Processing - Section 4: PDF Worker Configuration Regression",
     expect((caughtError as Error).message).not.toContain("pdf.worker.mjs");
   });
 });
+
+describe("Material Processing - Section 5: PPTX Static Import & Robust Extraction Regression", () => {
+  it("inngest/material-processing.ts statically imports node-pptx-parser without nativeRequire or eval", async () => {
+    const fs = await import("node:fs");
+    const sourceCode = fs.readFileSync("inngest/material-processing.ts", "utf-8");
+
+    // Must statically import node-pptx-parser
+    expect(sourceCode).toMatch(/import\s+PptxParser\s+from\s+["']node-pptx-parser["']/);
+
+    // Must NOT contain any nativeRequire or eval("require")
+    expect(sourceCode).not.toContain("nativeRequire");
+    expect(sourceCode).not.toContain('eval("require")');
+    expect(sourceCode).not.toContain("eval('require')");
+    expect(sourceCode).not.toMatch(/require\(["']node-pptx-parser["']\)/);
+  });
+
+  it("extracts text correctly from a real PPTX file using the static import path", async () => {
+    const fs = await import("node:fs");
+    const { extractTextFromBuffer } = await import("./material-processing");
+
+    const pptxBuffer = fs.readFileSync("test-fixtures/sample-presentation.pptx");
+    const result = await extractTextFromBuffer({
+      buffer: pptxBuffer,
+      fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      fileName: "sample-presentation.pptx",
+    });
+
+    expect(result.pageCount).toBe(2);
+    expect(result.pages).toHaveLength(2);
+    expect(result.pages[0]).toEqual({
+      pageNumber: 1,
+      text: expect.stringContaining("Distributed Computing"),
+    });
+    expect(result.pages[1]).toEqual({
+      pageNumber: 2,
+      text: expect.stringContaining("Vector Clocks"),
+    });
+  });
+
+  it("cleans up temporary files via fs.unlink in finally block when PPTX extraction fails and yields sanitized document error", async () => {
+    const fs = await import("node:fs");
+    const fsPromises = await import("node:fs/promises");
+    const os = await import("node:os");
+    const { extractTextFromBuffer, sanitizeMaterialErrorMessage } = await import("./material-processing");
+
+    // Invalid PPTX buffer
+    const invalidPptx = Buffer.from("Not a real PPTX file");
+
+    const filesBefore = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith("pptx-"));
+    const unlinkSpy = vi.spyOn(fsPromises.default, "unlink");
+
+    try {
+      let thrownError: unknown;
+      try {
+        await extractTextFromBuffer({
+          buffer: invalidPptx,
+          fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          fileName: "invalid.pptx",
+        });
+      } catch (err) {
+        thrownError = err;
+      }
+
+      // Extraction failure produces the parser/content error
+      expect(thrownError).toBeDefined();
+      const rawMessage = (thrownError as Error).message;
+      expect(rawMessage).toBe("PowerPoint presentation contains no extractable text or is corrupted.");
+
+      // Sanitization maps it to unreadable document message
+      const sanitized = sanitizeMaterialErrorMessage(rawMessage);
+      expect(sanitized).toBe("The document contains no readable text. Please provide a file with valid text content.");
+
+      // Cleanup via unlink was called
+      expect(unlinkSpy).toHaveBeenCalled();
+
+      // No lingering temp files
+      const filesAfter = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith("pptx-"));
+      const newlyLingering = filesAfter.filter((f) => !filesBefore.includes(f));
+      expect(newlyLingering).toHaveLength(0);
+    } finally {
+      unlinkSpy.mockRestore();
+    }
+  });
+
+  it("distinguishes fs.writeFile failure (e.g. ENOSPC) from document parsing failure, produces path-free error, and still cleans up via unlink", async () => {
+    const fsPromises = await import("node:fs/promises");
+    const { extractTextFromBuffer, sanitizeMaterialErrorMessage } = await import("./material-processing");
+
+    let attemptedUnlinkPath: string | null = null;
+    const unlinkSpy = vi.spyOn(fsPromises.default, "unlink").mockImplementation(async (filePath) => {
+      attemptedUnlinkPath = String(filePath);
+      return Promise.resolve();
+    });
+
+    const enospcError = new Error("ENOSPC: no space left on device, write 'C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pptx-12345.pptx'");
+    const writeFileSpy = vi.spyOn(fsPromises.default, "writeFile").mockRejectedValue(enospcError);
+
+    try {
+      let caughtError: unknown;
+      try {
+        await extractTextFromBuffer({
+          buffer: Buffer.from("dummy-presentation-bytes"),
+          fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          fileName: "slides.pptx",
+        });
+      } catch (e) {
+        caughtError = e;
+      }
+
+      expect(caughtError).toBeDefined();
+      const rawMessage = (caughtError as Error).message;
+
+      // 1. Must NOT produce corrupted/unreadable-document message
+      expect(rawMessage).not.toContain("contains no extractable text");
+      expect(rawMessage).not.toContain("corrupted");
+
+      // 2. Must NOT expose paths, internal temp filenames, or raw error messages
+      expect(rawMessage).not.toContain("pptx-12345");
+      expect(rawMessage).not.toContain("Temp");
+      expect(rawMessage).not.toContain("ENOSPC");
+      expect(rawMessage).not.toContain("C:\\");
+      expect(rawMessage).not.toContain("/");
+
+      // 3. Must produce safe path-free infrastructure error
+      expect(rawMessage).toBe("Failed to process document due to a temporary file storage error.");
+
+      // 4. sanitizeMaterialErrorMessage must NOT map it to an unreadable document error
+      const userSafeMessage = sanitizeMaterialErrorMessage(rawMessage);
+      expect(userSafeMessage).not.toContain("no readable text");
+      expect(userSafeMessage).toBe(
+        "Failed to process document due to a temporary file storage error. Please try again."
+      );
+
+      // 5. fs.unlink() cleanup was still attempted in the outer finally block
+      expect(unlinkSpy).toHaveBeenCalledTimes(1);
+      expect(attemptedUnlinkPath).toMatch(/pptx-.*\.pptx$/);
+    } finally {
+      writeFileSpy.mockRestore();
+      unlinkSpy.mockRestore();
+    }
+  });
+
+  it("handles EACCES/EIO on writeFile by returning path-free infrastructure error while executing cleanup", async () => {
+    const fsPromises = await import("node:fs/promises");
+    const { extractTextFromBuffer, sanitizeMaterialErrorMessage } = await import("./material-processing");
+
+    const unlinkSpy = vi.spyOn(fsPromises.default, "unlink").mockResolvedValue(undefined);
+    const eaccesError = new Error("EACCES: permission denied, open '/var/tmp/pptx-secret.pptx'");
+    const writeFileSpy = vi.spyOn(fsPromises.default, "writeFile").mockRejectedValue(eaccesError);
+
+    try {
+      let caughtError: unknown;
+      try {
+        await extractTextFromBuffer({
+          buffer: Buffer.from("dummy-presentation-bytes"),
+          fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          fileName: "slides.pptx",
+        });
+      } catch (e) {
+        caughtError = e;
+      }
+
+      expect(caughtError).toBeDefined();
+      const rawMessage = (caughtError as Error).message;
+      expect(rawMessage).toBe("Failed to process document due to a temporary file storage error.");
+
+      const userSafe = sanitizeMaterialErrorMessage(rawMessage);
+      expect(userSafe).toBe("Failed to process document due to a temporary file storage error. Please try again.");
+
+      expect(unlinkSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      writeFileSpy.mockRestore();
+      unlinkSpy.mockRestore();
+    }
+  });
+
+  it("does not leak storage paths or internal temp paths in error message", async () => {
+    const { extractTextFromBuffer } = await import("./material-processing");
+
+    const corruptBuffer = Buffer.from("bad-bytes");
+    try {
+      await extractTextFromBuffer({
+        buffer: corruptBuffer,
+        fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        fileName: "corrupt.pptx",
+      });
+      expect.unreachable("Should have thrown an error");
+    } catch (err: unknown) {
+      const msg = (err as Error).message;
+      expect(msg).toBe("PowerPoint presentation contains no extractable text or is corrupted.");
+      expect(msg).not.toContain("tmp");
+      expect(msg).not.toContain(".pptx");
+      expect(msg).not.toContain("/");
+      expect(msg).not.toContain("\\");
+    }
+  });
+
+  it("declares nodejs runtime in app/api/inngest/route.ts", async () => {
+    const routeModule = await import("@/app/api/inngest/route");
+    expect(routeModule.runtime).toBe("nodejs");
+  });
+});
+

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse", "pdf-parse/worker"],
+  serverExternalPackages: ["pdf-parse", "pdf-parse/worker", "node-pptx-parser", "unzipper"],
   images: {
     remotePatterns: [
       {

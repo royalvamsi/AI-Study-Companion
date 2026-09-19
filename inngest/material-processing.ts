@@ -6,6 +6,11 @@ import { extractConcepts } from "@/lib/documents/concepts";
 import { emitActivityEvent, ActivityEventType } from "@/lib/activity/events";
 import { PDFParse } from "pdf-parse";
 import { getData as getPdfWorkerData } from "pdf-parse/worker";
+import PptxParser from "node-pptx-parser";
+import mammoth from "mammoth";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 // Polyfill browser globals required by pdfjs-dist / pdf-parse in Node runtime
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,6 +81,18 @@ export function sanitizeMaterialErrorMessage(rawMessage?: string): string {
   }
   if (rawMessage.includes("Failed to download")) {
     return "Could not download the file from storage. Please try re-uploading.";
+  }
+  if (
+    rawMessage.includes("temporary file storage error") ||
+    rawMessage.includes("ENOSPC") ||
+    rawMessage.includes("EACCES") ||
+    rawMessage.includes("EPERM") ||
+    rawMessage.includes("EROFS") ||
+    rawMessage.includes("EIO") ||
+    rawMessage.includes("EMFILE") ||
+    rawMessage.includes("EBUSY")
+  ) {
+    return "Failed to process document due to a temporary file storage error. Please try again.";
   }
   if (rawMessage.includes("Empty or corrupt text file") || rawMessage.includes("contains no extractable text")) {
     return "The document contains no readable text. Please provide a file with valid text content.";
@@ -226,13 +243,6 @@ export async function extractTextFromBuffer({
     };
   }
 
-  // Lazy-load dynamic native modules at runtime so Turbopack does not attempt to statically bundle optional package dependencies
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nativeRequire = typeof (globalThis as any).__non_webpack_require__ === "function"
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ? (globalThis as any).__non_webpack_require__
-    : eval("require");
-
   // Word (.docx) extraction branch
   const isDocx =
     fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
@@ -240,7 +250,6 @@ export async function extractTextFromBuffer({
     lowerName.endsWith(".docx");
 
   if (isDocx) {
-    const mammoth = nativeRequire("mammoth");
     const { value } = await mammoth.extractRawText({ buffer });
     const fullText = value ? value.trim() : "";
     if (fullText.length === 0) {
@@ -260,41 +269,55 @@ export async function extractTextFromBuffer({
     lowerName.endsWith(".pptx");
 
   if (isPptx) {
-    const fs = await import("node:fs/promises");
-    const os = await import("node:os");
-    const path = await import("node:path");
     const tempFilePath = path.join(
       os.tmpdir(),
       `pptx-${Date.now()}-${Math.random().toString(36).slice(2)}.pptx`
     );
-    await fs.writeFile(tempFilePath, buffer);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pptxMod: any = nativeRequire("node-pptx-parser");
-      const PptxParser = pptxMod.default?.default || pptxMod.default || pptxMod;
-      const parser = new PptxParser(tempFilePath);
-      const rawSlides = await parser.extractText();
+      try {
+        await fs.writeFile(tempFilePath, buffer);
+      } catch (ioErr: unknown) {
+        const ioMessage = ioErr instanceof Error ? ioErr.message : String(ioErr);
+        console.error("[extractTextFromBuffer] Failed to stage PPTX temporary file:", ioMessage);
+        throw new Error("Failed to process document due to a temporary file storage error.");
+      }
 
-      const pages: Array<{ text: string; pageNumber: number }> = [];
-      let slideNum = 1;
-      for (const slide of rawSlides) {
-        const slideText = Array.isArray(slide.text)
-          ? slide.text.join("\n").trim()
-          : String(slide.text || "").trim();
-        if (slideText.length > 0) {
-          pages.push({ text: slideText, pageNumber: slideNum });
+      try {
+        const ParserConstructor: typeof PptxParser =
+          typeof PptxParser === "function"
+            ? PptxParser
+            : ((PptxParser as unknown as { default: typeof PptxParser }).default || PptxParser);
+        const parser = new ParserConstructor(tempFilePath);
+        const rawSlides = await parser.extractText();
+
+        const pages: Array<{ text: string; pageNumber: number }> = [];
+        let slideNum = 1;
+        for (const slide of rawSlides) {
+          const slideText = Array.isArray(slide.text)
+            ? slide.text.join("\n").trim()
+            : String(slide.text || "").trim();
+          if (slideText.length > 0) {
+            pages.push({ text: slideText, pageNumber: slideNum });
+          }
+          slideNum++;
         }
-        slideNum++;
-      }
 
-      if (pages.length === 0) {
-        throw new Error("PowerPoint presentation contains no extractable text.");
-      }
+        if (pages.length === 0) {
+          throw new Error("PowerPoint presentation contains no extractable text.");
+        }
 
-      return {
-        pages,
-        pageCount: rawSlides.length || pages.length,
-      };
+        return {
+          pages,
+          pageCount: rawSlides.length || pages.length,
+        };
+      } catch (parserErr: unknown) {
+        if (parserErr instanceof Error && parserErr.message === "PowerPoint presentation contains no extractable text.") {
+          throw parserErr;
+        }
+        const message = parserErr instanceof Error ? parserErr.message : String(parserErr);
+        console.error("[extractTextFromBuffer] PPTX extraction failed:", message);
+        throw new Error("PowerPoint presentation contains no extractable text or is corrupted.");
+      }
     } finally {
       await fs.unlink(tempFilePath).catch(() => {});
     }
