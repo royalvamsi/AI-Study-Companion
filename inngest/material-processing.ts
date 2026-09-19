@@ -4,6 +4,8 @@ import { chunkTextByPage } from "@/lib/rag/chunk";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
 import { extractConcepts } from "@/lib/documents/concepts";
 import { emitActivityEvent, ActivityEventType } from "@/lib/activity/events";
+import { PDFParse } from "pdf-parse";
+import { getData as getPdfWorkerData } from "pdf-parse/worker";
 
 // Polyfill browser globals required by pdfjs-dist / pdf-parse in Node runtime
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,29 +54,12 @@ if (typeof (globalThis as any).DOMPoint === "undefined") {
   (globalThis as any).DOMPoint = class DOMPointPolyfill {};
 }
 
-// Ensure pdfjsWorker is registered globally so pdfjs-dist avoids dynamic worker require in Next.js Turbopack
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-if (typeof (globalThis as any).pdfjsWorker === "undefined") {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nativeRequire = typeof (globalThis as any).__non_webpack_require__ === "function"
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? (globalThis as any).__non_webpack_require__
-      : eval("require");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (globalThis as any).pdfjsWorker = nativeRequire("pdfjs-dist/legacy/build/pdf.worker.mjs");
-  } catch {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { createRequire } = require("node:module");
-      const req = createRequire(process.cwd());
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).pdfjsWorker = req("pdfjs-dist/legacy/build/pdf.worker.mjs");
-    } catch (e) {
-      console.warn("Unable to preload pdfjsWorker:", e);
-    }
-  }
-}
+// Configure pdfjs worker using the inline data URL bundled inside pdf-parse/worker.
+// getData() returns a self-contained "data:text/javascript;base64,..." string — the
+// entire pdfjs worker is embedded inline, so no file-system path is needed and the
+// worker is always available in serverless/Vercel deployments where
+// pdfjs-dist/legacy/build/pdf.worker.mjs would otherwise be missing from the bundle.
+PDFParse.setWorker(getPdfWorkerData());
 
 export interface ProcessMaterialFailureParams {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -316,7 +301,7 @@ export async function extractTextFromBuffer({
   }
 
   // PDF extraction branch
-  const { PDFParse } = await import("pdf-parse");
+  // PDFParse is imported statically at the top of the file; worker is already configured.
   const parser = new PDFParse({ data: buffer });
   const parsed = await parser.getText();
   const pageCount = parsed.total || (parsed.pages?.length ?? 1);

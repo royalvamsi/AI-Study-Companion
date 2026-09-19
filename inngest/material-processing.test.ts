@@ -557,4 +557,37 @@ strong Consistency and high Availability during partitions.`;
   });
 });
 
+describe("Material Processing - Section 4: PDF Worker Configuration Regression", () => {
+  it("worker is configured — pdfjs does NOT throw 'Cannot find module pdfjs-dist/legacy/build/pdf.worker.mjs'", async () => {
+    // Guards against the Vercel production failure:
+    //   'Setting up fake worker failed: Cannot find module pdfjs-dist/legacy/build/pdf.worker.mjs'
+    //
+    // PDFParse.setWorker(getData()) is called at module load time using the inline
+    // data-URL worker from pdf-parse/worker, so no filesystem path is needed.
+    // If the worker were NOT configured, pdfjs-dist would throw a module-not-found
+    // error even before touching the PDF bytes.
+    //
+    // We test with a minimal stub PDF — it's structurally invalid so pdfjs will throw,
+    // but the error we receive must NOT be "Cannot find module …pdf.worker.mjs".
+    const { extractTextFromBuffer } = await import("./material-processing");
 
+    const emptyPdfBuffer = Buffer.from("%PDF-1.4\n%%EOF\n", "utf-8");
+
+    let caughtError: unknown;
+    try {
+      await extractTextFromBuffer({
+        buffer: emptyPdfBuffer,
+        fileType: "application/pdf",
+        fileName: "empty.pdf",
+      });
+    } catch (e) {
+      caughtError = e;
+    }
+
+    // An error is expected (the stub PDF is invalid), but it must not be the
+    // Vercel production error "Cannot find module …pdf.worker.mjs".
+    expect(caughtError).toBeDefined();
+    expect((caughtError as Error).message).not.toContain("Cannot find module");
+    expect((caughtError as Error).message).not.toContain("pdf.worker.mjs");
+  });
+});
