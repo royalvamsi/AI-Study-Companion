@@ -37,6 +37,7 @@ export const TutorMessageSchema = z.object({
   projectId: z.string().uuid(),
   conversationId: z.string().uuid().optional(), // null = start new conversation
   message: z.string().min(1).max(4000),
+  materialId: z.string().uuid().optional().nullable(),
 });
 
 // ── Quiz ──────────────────────────────────────────────────────────────────────

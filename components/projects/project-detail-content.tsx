@@ -345,7 +345,7 @@ export function ProjectDetailContent({
               Analytics
             </Button>
           </Link>
-          <Link href={`/tutor?project=${project.id}`}>
+          <Link href={`/tutor?projectId=${project.id}`}>
             <Button
               variant="outline"
               size="sm"
@@ -355,7 +355,7 @@ export function ProjectDetailContent({
               AI Tutor
             </Button>
           </Link>
-          <Link href={`/quiz?project=${project.id}`}>
+          <Link href={`/quiz?projectId=${project.id}`}>
             <Button
               size="sm"
               className="bg-orange hover:bg-[#D44F19] text-white text-xs h-9 px-4 rounded-xl font-medium shadow-xs transition-colors cursor-pointer"
@@ -630,7 +630,7 @@ export function ProjectDetailContent({
                     {/* Material Actions */}
                     {isReady && (
                       <div className="flex items-center justify-end gap-2 pt-2 border-t hairline">
-                        <Link href={`/quiz?project=${project.id}&material=${mat.id}`}>
+                        <Link href={`/quiz?projectId=${project.id}&materialId=${mat.id}`}>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -640,7 +640,7 @@ export function ProjectDetailContent({
                             Quiz this doc
                           </Button>
                         </Link>
-                        <Link href={`/tutor?project=${project.id}`}>
+                        <Link href={`/tutor?projectId=${project.id}&materialId=${mat.id}`}>
                           <Button
                             variant="ghost"
                             size="sm"

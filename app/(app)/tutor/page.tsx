@@ -15,7 +15,12 @@ export const metadata: Metadata = {
 export default async function TutorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string }>;
+  searchParams: Promise<{
+    project?: string;
+    projectId?: string;
+    materialId?: string;
+    material?: string;
+  }>;
 }) {
   const supabase = await createServerClient();
   const {
@@ -24,36 +29,50 @@ export default async function TutorPage({
   if (!user) redirect("/login");
 
   const params = await searchParams;
-  const projectId = params.project;
+  const requestedProjectId = params.projectId || params.project || null;
+  const requestedMaterialId = params.materialId || params.material || null;
 
-  // Fetch user's projects for project selector
+  // Fetch user's projects for project selector (strictly scoped to user)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: projectsRaw } = await (supabase.from("projects") as any)
-    .select("id, name, space_id, materials(id, status, file_name)")
+    .select("id, name, space_id, materials(id, status, file_name, page_count)")
     .eq("user_id", user.id)
     .order("name");
 
-  let projects = (projectsRaw as any[]) ?? [];
+  const projects = (projectsRaw as any[]) ?? [];
 
-  // If projectId is in URL, ensure the project record is loaded and included
-  if (projectId && !projects.some((p) => p.id === projectId)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: currentProject } = await (supabase.from("projects") as any)
-      .select("id, name, space_id, materials(id, status, file_name)")
-      .eq("id", projectId)
-      .maybeSingle();
-    if (currentProject) {
-      projects = [currentProject, ...projects];
+  let activeProjectId: string | null = null;
+  let activeMaterialId: string | null = null;
+  let validationNotice: string | null = null;
+
+  if (requestedProjectId) {
+    const projectMatch = projects.find((p) => p.id === requestedProjectId);
+    if (!projectMatch) {
+      validationNotice =
+        "The requested study project could not be found or you do not have permission to view it.";
+    } else {
+      activeProjectId = projectMatch.id;
+      if (requestedMaterialId) {
+        const materialMatch = projectMatch.materials?.find(
+          (m: { id: string }) => m.id === requestedMaterialId
+        );
+        if (!materialMatch) {
+          validationNotice =
+            "The requested study material was not found in this project.";
+        } else {
+          activeMaterialId = materialMatch.id;
+        }
+      }
     }
   }
 
   // If a project is selected, create or load a conversation
   let conversationId: string | null = null;
-  if (projectId) {
+  if (activeProjectId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase.from("conversations") as any)
       .select("id")
-      .eq("project_id", projectId)
+      .eq("project_id", activeProjectId)
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(1)
@@ -61,11 +80,11 @@ export default async function TutorPage({
 
     if (existing) {
       conversationId = existing.id;
-    } else if (projectId) {
+    } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: newConv } = await (supabase.from("conversations") as any)
         .insert({
-          project_id: projectId,
+          project_id: activeProjectId,
           user_id: user.id,
           title: "New conversation",
         })
@@ -76,7 +95,14 @@ export default async function TutorPage({
   }
 
   // Load existing messages
-  let messages: Array<{ id: string; role: string; content: string; sources: unknown; evidence_state: string | null; created_at: string }> = [];
+  let messages: Array<{
+    id: string;
+    role: string;
+    content: string;
+    sources: unknown;
+    evidence_state: string | null;
+    created_at: string;
+  }> = [];
   if (conversationId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase.from("messages") as any)
@@ -88,15 +114,24 @@ export default async function TutorPage({
 
   // Section 1: Tutor opens with context, not a blank box
   let initialOpeningGreeting: string | null = null;
-  if (projectId && messages.length === 0) {
-    const learningContext = await getPersistentLearningContext(user.id, projectId);
-    initialOpeningGreeting = await generateTutorOpeningMessage(user.id, projectId, learningContext);
+  if (activeProjectId && messages.length === 0) {
+    const learningContext = await getPersistentLearningContext(
+      user.id,
+      activeProjectId
+    );
+    initialOpeningGreeting = await generateTutorOpeningMessage(
+      user.id,
+      activeProjectId,
+      learningContext
+    );
   }
 
   return (
     <TutorChat
       projects={projects ?? []}
-      activeProjectId={projectId ?? null}
+      activeProjectId={activeProjectId}
+      activeMaterialId={activeMaterialId}
+      validationNotice={validationNotice}
       conversationId={conversationId}
       initialMessages={messages}
       initialOpeningGreeting={initialOpeningGreeting}
