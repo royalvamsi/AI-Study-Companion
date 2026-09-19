@@ -316,7 +316,7 @@ export async function extractTextFromBuffer({
   }
 
   // PDF extraction branch
-  const { PDFParse } = nativeRequire("pdf-parse");
+  const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse({ data: buffer });
   const parsed = await parser.getText();
   const pageCount = parsed.total || (parsed.pages?.length ?? 1);
