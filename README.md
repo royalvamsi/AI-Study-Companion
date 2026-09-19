@@ -3,7 +3,11 @@
 > **An intelligent, production-grade AI learning partner that transforms course materials into an active, adaptive, and evidence-grounded study loop.**  
 > Built for the **AI.Prof Full Stack AI Engineer Candidate Challenge** based on **Project Requirements / PRD v3.0**.
 
----
+# AI Study Companion
+
+> An intelligent, production-grade AI learning partner...
+
+🔗 **Live Demo:** https://ai-study-companion-khaki.vercel.app
 
 ## 🎯 Executive Summary & Problem Statement
 
