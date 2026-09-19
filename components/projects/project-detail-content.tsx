@@ -12,6 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   FileText,
   Upload,
   Lightbulb,
@@ -26,6 +33,8 @@ import {
   FileCheck2,
   BarChart3,
   ArrowRight,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 interface Material {
@@ -86,6 +95,16 @@ export function ProjectDetailContent({
   mastery,
 }: ProjectDetailContentProps) {
   const router = useRouter();
+  const [currentMaterials, setCurrentMaterials] = useState<Material[]>(materials);
+  const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
+  const [deletingMaterial, setDeletingMaterial] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccessMessage, setDeleteSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCurrentMaterials(materials);
+  }, [materials]);
+
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -100,7 +119,7 @@ export function ProjectDetailContent({
 
   // Auto-refresh when materials are queued or processing
   useEffect(() => {
-    const hasPending = materials.some(
+    const hasPending = currentMaterials.some(
       (m) => m.status === "queued" || m.status === "processing"
     );
     if (!hasPending) return;
@@ -110,7 +129,46 @@ export function ProjectDetailContent({
     }, 3000);
 
     return () => clearInterval(timer);
-  }, [materials, router]);
+  }, [currentMaterials, router]);
+
+  const handleDeleteMaterial = useCallback(async () => {
+    if (!materialToDelete || deletingMaterial) return;
+    setDeletingMaterial(true);
+    setDeleteError(null);
+
+    try {
+      const res = await fetch(
+        `/api/projects/${project.id}/materials/${materialToDelete.id}`,
+        { method: "DELETE" }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setDeleteError(data.error || "Failed to delete material.");
+        setDeletingMaterial(false);
+        return;
+      }
+
+      const deletedId = materialToDelete.id;
+      const deletedName = materialToDelete.file_name;
+      setCurrentMaterials((prev) => prev.filter((m) => m.id !== deletedId));
+      setDeleteSuccessMessage(`Material "${deletedName}" was successfully deleted.`);
+      setMaterialToDelete(null);
+      setDeletingMaterial(false);
+
+      // Refresh server state for updated statistics and concepts
+      router.refresh();
+
+      setTimeout(() => {
+        setDeleteSuccessMessage((prev) => (prev?.includes(deletedName) ? null : prev));
+      }, 5000);
+    } catch (err) {
+      console.error("Error deleting material:", err);
+      setDeleteError("A network error occurred while deleting the material. Please try again.");
+      setDeletingMaterial(false);
+    }
+  }, [materialToDelete, deletingMaterial, project.id, router]);
 
   const handleUpload = useCallback(
     async (file: File) => {
@@ -372,7 +430,7 @@ export function ProjectDetailContent({
           </div>
           <div>
             <p className="text-2xl font-bold text-ink tracking-tight font-sans">
-              {materials.reduce((sum, m) => sum + (m.page_count ?? 0), 0)}
+              {currentMaterials.reduce((sum, m) => sum + (m.page_count ?? 0), 0)}
             </p>
             <p className="text-[11px] text-neutral-500 font-sans">Pages Indexed</p>
           </div>
@@ -386,9 +444,24 @@ export function ProjectDetailContent({
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-orange" />
             <h2 className="text-[11px] font-semibold uppercase tracking-[.18em] text-neutral-500">
-              Study Materials ({materials.length})
+              Study Materials ({currentMaterials.length})
             </h2>
           </div>
+
+          {deleteSuccessMessage && (
+            <div className="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>{deleteSuccessMessage}</span>
+              </div>
+              <button
+                onClick={() => setDeleteSuccessMessage(null)}
+                className="text-emerald-700 hover:text-emerald-900 text-xs font-semibold cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* Upload Dropzone */}
           <div
@@ -439,13 +512,13 @@ export function ProjectDetailContent({
           </div>
 
           {/* Materials Cards List */}
-          {materials.length === 0 ? (
+          {currentMaterials.length === 0 ? (
             <div className="p-8 rounded-2xl border border-black/10 bg-white subtle-shadow text-center text-xs text-neutral-500">
               No materials uploaded yet. Add a PDF above to extract knowledge concepts.
             </div>
           ) : (
             <div className="space-y-3">
-              {materials.map((mat) => {
+              {currentMaterials.map((mat) => {
                 const isReady = mat.status === "ready";
                 const isProcessing = mat.status === "processing";
                 const isQueued = mat.status === "queued";
@@ -475,8 +548,8 @@ export function ProjectDetailContent({
                         </div>
                       </div>
 
-                      {/* Status Badge */}
-                      <div className="shrink-0">
+                      {/* Status Badge & Delete Action */}
+                      <div className="shrink-0 flex items-center gap-2">
                         {isReady && (
                           <span className="inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
                             <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
@@ -501,6 +574,19 @@ export function ProjectDetailContent({
                             Failed
                           </span>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setDeleteError(null);
+                            setMaterialToDelete(mat);
+                          }}
+                          className="h-7 w-7 p-0 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
+                          title="Delete material"
+                          aria-label={`Delete ${mat.file_name}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
 
@@ -644,6 +730,73 @@ export function ProjectDetailContent({
           )}
         </div>
       </div>
+
+      {/* Delete Material Confirmation Dialog */}
+      <Dialog
+        open={materialToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletingMaterial) {
+            setMaterialToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <DialogContent className="bg-white border border-black/10 text-ink max-w-md rounded-[24px] p-6 shadow-xl">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="display text-2xl font-bold text-rose-600 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-rose-600" />
+              Delete Material?
+            </DialogTitle>
+            <DialogDescription className="text-neutral-600 text-xs pt-1.5 leading-relaxed">
+              Are you sure you want to delete{" "}
+              <strong className="text-ink font-semibold">
+                &ldquo;{materialToDelete?.file_name}&rdquo;
+              </strong>
+              ? This will permanently remove the material file, its extracted content, and any material-specific concept data. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deletingMaterial}
+              onClick={() => {
+                setMaterialToDelete(null);
+                setDeleteError(null);
+              }}
+              className="border-black/10 bg-white hover:bg-neutral-50 text-neutral-700 text-xs h-9 rounded-xl cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={deletingMaterial}
+              onClick={handleDeleteMaterial}
+              className="bg-rose-600 hover:bg-rose-700 text-white text-xs h-9 px-4 rounded-xl cursor-pointer font-medium shadow-xs"
+            >
+              {deletingMaterial ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  Delete Material
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
