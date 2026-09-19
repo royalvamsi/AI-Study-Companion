@@ -128,11 +128,11 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-paper text-ink;
+    @apply bg-slate-950 text-slate-100;
   }
   html {
     @apply font-sans;
-    color-scheme: light;
+    color-scheme: dark;
   }
 }
 
