@@ -82,6 +82,18 @@ export function sanitizeMaterialErrorMessage(rawMessage?: string): string {
   if (rawMessage.includes("Failed to download")) {
     return "Could not download the file from storage. Please try re-uploading.";
   }
+  if (
+    rawMessage.includes("temporary file storage error") ||
+    rawMessage.includes("ENOSPC") ||
+    rawMessage.includes("EACCES") ||
+    rawMessage.includes("EPERM") ||
+    rawMessage.includes("EROFS") ||
+    rawMessage.includes("EIO") ||
+    rawMessage.includes("EMFILE") ||
+    rawMessage.includes("EBUSY")
+  ) {
+    return "Failed to process document due to a temporary file storage error. Please try again.";
+  }
   if (rawMessage.includes("Empty or corrupt text file") || rawMessage.includes("contains no extractable text")) {
     return "The document contains no readable text. Please provide a file with valid text content.";
   }
@@ -262,41 +274,50 @@ export async function extractTextFromBuffer({
       `pptx-${Date.now()}-${Math.random().toString(36).slice(2)}.pptx`
     );
     try {
-      await fs.writeFile(tempFilePath, buffer);
-      const ParserConstructor: typeof PptxParser =
-        typeof PptxParser === "function"
-          ? PptxParser
-          : ((PptxParser as unknown as { default: typeof PptxParser }).default || PptxParser);
-      const parser = new ParserConstructor(tempFilePath);
-      const rawSlides = await parser.extractText();
+      try {
+        await fs.writeFile(tempFilePath, buffer);
+      } catch (ioErr: unknown) {
+        const ioMessage = ioErr instanceof Error ? ioErr.message : String(ioErr);
+        console.error("[extractTextFromBuffer] Failed to stage PPTX temporary file:", ioMessage);
+        throw new Error("Failed to process document due to a temporary file storage error.");
+      }
 
-      const pages: Array<{ text: string; pageNumber: number }> = [];
-      let slideNum = 1;
-      for (const slide of rawSlides) {
-        const slideText = Array.isArray(slide.text)
-          ? slide.text.join("\n").trim()
-          : String(slide.text || "").trim();
-        if (slideText.length > 0) {
-          pages.push({ text: slideText, pageNumber: slideNum });
+      try {
+        const ParserConstructor: typeof PptxParser =
+          typeof PptxParser === "function"
+            ? PptxParser
+            : ((PptxParser as unknown as { default: typeof PptxParser }).default || PptxParser);
+        const parser = new ParserConstructor(tempFilePath);
+        const rawSlides = await parser.extractText();
+
+        const pages: Array<{ text: string; pageNumber: number }> = [];
+        let slideNum = 1;
+        for (const slide of rawSlides) {
+          const slideText = Array.isArray(slide.text)
+            ? slide.text.join("\n").trim()
+            : String(slide.text || "").trim();
+          if (slideText.length > 0) {
+            pages.push({ text: slideText, pageNumber: slideNum });
+          }
+          slideNum++;
         }
-        slideNum++;
-      }
 
-      if (pages.length === 0) {
-        throw new Error("PowerPoint presentation contains no extractable text.");
-      }
+        if (pages.length === 0) {
+          throw new Error("PowerPoint presentation contains no extractable text.");
+        }
 
-      return {
-        pages,
-        pageCount: rawSlides.length || pages.length,
-      };
-    } catch (err: unknown) {
-      if (err instanceof Error && err.message === "PowerPoint presentation contains no extractable text.") {
-        throw err;
+        return {
+          pages,
+          pageCount: rawSlides.length || pages.length,
+        };
+      } catch (parserErr: unknown) {
+        if (parserErr instanceof Error && parserErr.message === "PowerPoint presentation contains no extractable text.") {
+          throw parserErr;
+        }
+        const message = parserErr instanceof Error ? parserErr.message : String(parserErr);
+        console.error("[extractTextFromBuffer] PPTX extraction failed:", message);
+        throw new Error("PowerPoint presentation contains no extractable text or is corrupted.");
       }
-      const message = err instanceof Error ? err.message : String(err);
-      console.error("[extractTextFromBuffer] PPTX extraction failed:", message);
-      throw new Error("PowerPoint presentation contains no extractable text or is corrupted.");
     } finally {
       await fs.unlink(tempFilePath).catch(() => {});
     }

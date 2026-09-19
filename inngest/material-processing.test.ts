@@ -63,6 +63,30 @@ describe("Material Processing - Section 1: onFailure Handling", () => {
     );
     expect(downloadMsg).toContain("Could not download");
 
+    const enospcMsg = sanitizeMaterialErrorMessage(
+      "Failed to stage temporary file: ENOSPC: no space left on device, write '/tmp/pptx-12345.pptx'"
+    );
+    expect(enospcMsg).toBe(
+      "Failed to process document due to a temporary file storage error. Please try again."
+    );
+    expect(enospcMsg).not.toContain("no readable text");
+    expect(enospcMsg).not.toContain("corrupted");
+    expect(enospcMsg).not.toContain("pptx-12345");
+
+    const stagingMsg = sanitizeMaterialErrorMessage(
+      "Failed to process document due to a temporary file storage error."
+    );
+    expect(stagingMsg).toBe(
+      "Failed to process document due to a temporary file storage error. Please try again."
+    );
+
+    const corruptPptxMsg = sanitizeMaterialErrorMessage(
+      "PowerPoint presentation contains no extractable text or is corrupted."
+    );
+    expect(corruptPptxMsg).toBe(
+      "The document contains no readable text. Please provide a file with valid text content."
+    );
+
     const fallbackMsg = sanitizeMaterialErrorMessage(
       "SELECT * FROM super_secret_internal_table WHERE error at file.ts:123:456"
     );
@@ -630,32 +654,54 @@ describe("Material Processing - Section 5: PPTX Static Import & Robust Extractio
     });
   });
 
-  it("cleans up temporary files in finally block even if PPTX extraction fails", async () => {
+  it("cleans up temporary files via fs.unlink in finally block when PPTX extraction fails and yields sanitized document error", async () => {
     const fs = await import("node:fs");
+    const fsPromises = await import("node:fs/promises");
     const os = await import("node:os");
-    const { extractTextFromBuffer } = await import("./material-processing");
+    const { extractTextFromBuffer, sanitizeMaterialErrorMessage } = await import("./material-processing");
 
     // Invalid PPTX buffer
     const invalidPptx = Buffer.from("Not a real PPTX file");
 
     const filesBefore = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith("pptx-"));
+    const unlinkSpy = vi.spyOn(fsPromises.default, "unlink");
 
-    await expect(
-      extractTextFromBuffer({
-        buffer: invalidPptx,
-        fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        fileName: "invalid.pptx",
-      })
-    ).rejects.toThrow("PowerPoint presentation contains no extractable text or is corrupted.");
+    try {
+      let thrownError: unknown;
+      try {
+        await extractTextFromBuffer({
+          buffer: invalidPptx,
+          fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          fileName: "invalid.pptx",
+        });
+      } catch (err) {
+        thrownError = err;
+      }
 
-    const filesAfter = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith("pptx-"));
-    const newlyLingering = filesAfter.filter((f) => !filesBefore.includes(f));
-    expect(newlyLingering).toHaveLength(0);
+      // Extraction failure produces the parser/content error
+      expect(thrownError).toBeDefined();
+      const rawMessage = (thrownError as Error).message;
+      expect(rawMessage).toBe("PowerPoint presentation contains no extractable text or is corrupted.");
+
+      // Sanitization maps it to unreadable document message
+      const sanitized = sanitizeMaterialErrorMessage(rawMessage);
+      expect(sanitized).toBe("The document contains no readable text. Please provide a file with valid text content.");
+
+      // Cleanup via unlink was called
+      expect(unlinkSpy).toHaveBeenCalled();
+
+      // No lingering temp files
+      const filesAfter = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith("pptx-"));
+      const newlyLingering = filesAfter.filter((f) => !filesBefore.includes(f));
+      expect(newlyLingering).toHaveLength(0);
+    } finally {
+      unlinkSpy.mockRestore();
+    }
   });
 
-  it("attempts cleanup in finally block even if writeFile fails", async () => {
+  it("distinguishes fs.writeFile failure (e.g. ENOSPC) from document parsing failure, produces path-free error, and still cleans up via unlink", async () => {
     const fsPromises = await import("node:fs/promises");
-    const { extractTextFromBuffer } = await import("./material-processing");
+    const { extractTextFromBuffer, sanitizeMaterialErrorMessage } = await import("./material-processing");
 
     let attemptedUnlinkPath: string | null = null;
     const unlinkSpy = vi.spyOn(fsPromises.default, "unlink").mockImplementation(async (filePath) => {
@@ -663,21 +709,82 @@ describe("Material Processing - Section 5: PPTX Static Import & Robust Extractio
       return Promise.resolve();
     });
 
-    const writeFileSpy = vi.spyOn(fsPromises.default, "writeFile").mockImplementation(async () => {
-      throw new Error("Disk full or permission denied during writeFile");
-    });
+    const enospcError = new Error("ENOSPC: no space left on device, write 'C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pptx-12345.pptx'");
+    const writeFileSpy = vi.spyOn(fsPromises.default, "writeFile").mockRejectedValue(enospcError);
 
     try {
-      await expect(
-        extractTextFromBuffer({
-          buffer: Buffer.from("dummy"),
+      let caughtError: unknown;
+      try {
+        await extractTextFromBuffer({
+          buffer: Buffer.from("dummy-presentation-bytes"),
           fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-          fileName: "test.pptx",
-        })
-      ).rejects.toThrow();
+          fileName: "slides.pptx",
+        });
+      } catch (e) {
+        caughtError = e;
+      }
 
+      expect(caughtError).toBeDefined();
+      const rawMessage = (caughtError as Error).message;
+
+      // 1. Must NOT produce corrupted/unreadable-document message
+      expect(rawMessage).not.toContain("contains no extractable text");
+      expect(rawMessage).not.toContain("corrupted");
+
+      // 2. Must NOT expose paths, internal temp filenames, or raw error messages
+      expect(rawMessage).not.toContain("pptx-12345");
+      expect(rawMessage).not.toContain("Temp");
+      expect(rawMessage).not.toContain("ENOSPC");
+      expect(rawMessage).not.toContain("C:\\");
+      expect(rawMessage).not.toContain("/");
+
+      // 3. Must produce safe path-free infrastructure error
+      expect(rawMessage).toBe("Failed to process document due to a temporary file storage error.");
+
+      // 4. sanitizeMaterialErrorMessage must NOT map it to an unreadable document error
+      const userSafeMessage = sanitizeMaterialErrorMessage(rawMessage);
+      expect(userSafeMessage).not.toContain("no readable text");
+      expect(userSafeMessage).toBe(
+        "Failed to process document due to a temporary file storage error. Please try again."
+      );
+
+      // 5. fs.unlink() cleanup was still attempted in the outer finally block
       expect(unlinkSpy).toHaveBeenCalledTimes(1);
       expect(attemptedUnlinkPath).toMatch(/pptx-.*\.pptx$/);
+    } finally {
+      writeFileSpy.mockRestore();
+      unlinkSpy.mockRestore();
+    }
+  });
+
+  it("handles EACCES/EIO on writeFile by returning path-free infrastructure error while executing cleanup", async () => {
+    const fsPromises = await import("node:fs/promises");
+    const { extractTextFromBuffer, sanitizeMaterialErrorMessage } = await import("./material-processing");
+
+    const unlinkSpy = vi.spyOn(fsPromises.default, "unlink").mockResolvedValue(undefined);
+    const eaccesError = new Error("EACCES: permission denied, open '/var/tmp/pptx-secret.pptx'");
+    const writeFileSpy = vi.spyOn(fsPromises.default, "writeFile").mockRejectedValue(eaccesError);
+
+    try {
+      let caughtError: unknown;
+      try {
+        await extractTextFromBuffer({
+          buffer: Buffer.from("dummy-presentation-bytes"),
+          fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          fileName: "slides.pptx",
+        });
+      } catch (e) {
+        caughtError = e;
+      }
+
+      expect(caughtError).toBeDefined();
+      const rawMessage = (caughtError as Error).message;
+      expect(rawMessage).toBe("Failed to process document due to a temporary file storage error.");
+
+      const userSafe = sanitizeMaterialErrorMessage(rawMessage);
+      expect(userSafe).toBe("Failed to process document due to a temporary file storage error. Please try again.");
+
+      expect(unlinkSpy).toHaveBeenCalledTimes(1);
     } finally {
       writeFileSpy.mockRestore();
       unlinkSpy.mockRestore();
