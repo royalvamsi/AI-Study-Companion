@@ -135,13 +135,32 @@ export async function POST(
     // - do not insert a duplicate row
     // - do not delete the Storage object
     // - do not emit a duplicate Inngest event
+    // We execute separate .eq() lookups to avoid interpolating raw filePaths into PostgREST filter strings,
+    // which can fail on filenames containing commas, parentheses, or filter delimiters.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingMaterial } = await (supabase.from("materials") as any)
+    let existingMaterial = null;
+
+    const { data: materialById } = await (supabase.from("materials") as any)
       .select()
       .eq("project_id", projectId)
       .eq("user_id", user.id)
-      .or(`id.eq.${materialId},file_path.eq.${filePath}`)
+      .eq("id", materialId)
       .maybeSingle();
+
+    if (materialById) {
+      existingMaterial = materialById;
+    } else {
+      const { data: materialByPath } = await (supabase.from("materials") as any)
+        .select()
+        .eq("project_id", projectId)
+        .eq("user_id", user.id)
+        .eq("file_path", filePath)
+        .maybeSingle();
+
+      if (materialByPath) {
+        existingMaterial = materialByPath;
+      }
+    }
 
     if (existingMaterial) {
       return NextResponse.json({ material: existingMaterial }, { status: 200 });
@@ -201,13 +220,29 @@ export async function POST(
     if (insertError) {
       console.error("[finalize] DB insert failed:", insertError);
 
-      // Verify if a material record already references this materialId or filePath
+      // Verify if a material record already references this materialId or filePath.
       // Never delete a Storage object that is already referenced by an existing material record.
+      // Use separate exact .eq() queries to avoid PostgREST filter string parsing issues.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: referencingMaterial } = await (adminSupabase.from("materials") as any)
+      let referencingMaterial = null;
+
+      const { data: refById } = await (adminSupabase.from("materials") as any)
         .select()
-        .or(`id.eq.${materialId},file_path.eq.${filePath}`)
+        .eq("id", materialId)
         .maybeSingle();
+
+      if (refById) {
+        referencingMaterial = refById;
+      } else {
+        const { data: refByPath } = await (adminSupabase.from("materials") as any)
+          .select()
+          .eq("file_path", filePath)
+          .maybeSingle();
+
+        if (refByPath) {
+          referencingMaterial = refByPath;
+        }
+      }
 
       if (referencingMaterial) {
         if (
@@ -369,13 +404,29 @@ export async function DELETE(
       );
     }
 
-    // 5. Check if any material record references this storage object
+    // 5. Check if any material record references this storage object.
+    // Use separate exact .eq() queries to avoid PostgREST filter string parsing issues.
     const adminSupabase = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: referencingMaterial } = await (adminSupabase.from("materials") as any)
+    let referencingMaterial = null;
+
+    const { data: refById } = await (adminSupabase.from("materials") as any)
       .select("id")
-      .or(`id.eq.${materialId},file_path.eq.${filePath}`)
+      .eq("id", materialId)
       .maybeSingle();
+
+    if (refById) {
+      referencingMaterial = refById;
+    } else {
+      const { data: refByPath } = await (adminSupabase.from("materials") as any)
+        .select("id")
+        .eq("file_path", filePath)
+        .maybeSingle();
+
+      if (refByPath) {
+        referencingMaterial = refByPath;
+      }
+    }
 
     if (referencingMaterial) {
       // NEVER delete a storage object that is referenced by an existing material record

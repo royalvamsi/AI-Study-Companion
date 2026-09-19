@@ -70,12 +70,25 @@ vi.mock("@/lib/supabase/server", () => ({
           insert: mockInsert,
           update: mockUpdate,
           select: vi.fn().mockImplementation(() => {
+            const filters: Record<string, any> = {};
             const builder: any = {
-              eq: vi.fn().mockImplementation(() => builder),
+              eq: vi.fn().mockImplementation((col: string, val: any) => {
+                filters[col] = val;
+                return builder;
+              }),
               or: vi.fn().mockImplementation(() => builder),
-              maybeSingle: vi.fn().mockImplementation(() =>
-                Promise.resolve({ data: mockExistingMaterial, error: null })
-              ),
+              maybeSingle: vi.fn().mockImplementation(() => {
+                if (!mockExistingMaterial) {
+                  return Promise.resolve({ data: null, error: null });
+                }
+                if (filters.id && mockExistingMaterial.id && filters.id !== mockExistingMaterial.id) {
+                  return Promise.resolve({ data: null, error: null });
+                }
+                if (filters.file_path && mockExistingMaterial.file_path && filters.file_path !== mockExistingMaterial.file_path) {
+                  return Promise.resolve({ data: null, error: null });
+                }
+                return Promise.resolve({ data: mockExistingMaterial, error: null });
+              }),
               single: vi.fn().mockImplementation(() =>
                 Promise.resolve({ data: mockExistingMaterial, error: null })
               ),
@@ -101,22 +114,31 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     from: vi.fn().mockImplementation((table: string) => {
       if (table === "materials") {
+        const filters: Record<string, any> = {};
         const builder: any = {
           select: vi.fn().mockImplementation(() => builder),
-          eq: vi.fn().mockImplementation(() => builder),
+          eq: vi.fn().mockImplementation((col: string, val: any) => {
+            filters[col] = val;
+            return builder;
+          }),
           or: vi.fn().mockImplementation(() => builder),
-          maybeSingle: vi.fn().mockImplementation(() =>
-            Promise.resolve({
-              data: mockReferencingMaterial !== undefined ? mockReferencingMaterial : mockExistingMaterial,
-              error: null,
-            })
-          ),
-          single: vi.fn().mockImplementation(() =>
-            Promise.resolve({
-              data: mockReferencingMaterial !== undefined ? mockReferencingMaterial : mockExistingMaterial,
-              error: null,
-            })
-          ),
+          maybeSingle: vi.fn().mockImplementation(() => {
+            const target = mockReferencingMaterial !== undefined ? mockReferencingMaterial : mockExistingMaterial;
+            if (!target) {
+              return Promise.resolve({ data: null, error: null });
+            }
+            if (filters.id && target.id && filters.id !== target.id) {
+              return Promise.resolve({ data: null, error: null });
+            }
+            if (filters.file_path && target.file_path && filters.file_path !== target.file_path) {
+              return Promise.resolve({ data: null, error: null });
+            }
+            return Promise.resolve({ data: target, error: null });
+          }),
+          single: vi.fn().mockImplementation(() => {
+            const target = mockReferencingMaterial !== undefined ? mockReferencingMaterial : mockExistingMaterial;
+            return Promise.resolve({ data: target, error: null });
+          }),
         };
         return builder;
       }
@@ -974,5 +996,267 @@ describe("Direct Material Upload Architecture", () => {
       });
       expect(backslashRes.status).toBe(400);
     });
+
+    it("accepts valid filenames containing literal percent signs: lecture%notes.pdf", async () => {
+      expect(isSafeFileName("lecture%notes.pdf")).toBe(true);
+
+      const filePath = `user_test_abc/${validProjectId}/${validMaterialId}/lecture%notes.pdf`;
+      expect(
+        validateStoragePath({
+          filePath,
+          userId: "user_test_abc",
+          projectId: validProjectId,
+          materialId: validMaterialId,
+          fileName: "lecture%notes.pdf",
+        })
+      ).toBe(true);
+
+      const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: "lecture%notes.pdf",
+          fileType: "application/pdf",
+          fileSize: 1024,
+        }),
+      });
+
+      const res = await uploadUrlPOST(req, {
+        params: Promise.resolve({ projectId: validProjectId }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.filePath).toContain("lecture%notes.pdf");
+    });
+
+    it("accepts valid filenames containing literal percent signs: 100%_accuracy.pdf", async () => {
+      expect(isSafeFileName("100%_accuracy.pdf")).toBe(true);
+
+      const filePath = `user_test_abc/${validProjectId}/${validMaterialId}/100%_accuracy.pdf`;
+      expect(
+        validateStoragePath({
+          filePath,
+          userId: "user_test_abc",
+          projectId: validProjectId,
+          materialId: validMaterialId,
+          fileName: "100%_accuracy.pdf",
+        })
+      ).toBe(true);
+
+      const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: "100%_accuracy.pdf",
+          fileType: "application/pdf",
+          fileSize: 2048,
+        }),
+      });
+
+      const res = await uploadUrlPOST(req, {
+        params: Promise.resolve({ projectId: validProjectId }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.filePath).toContain("100%_accuracy.pdf");
+    });
+
+    it("accepts valid filenames containing literal percent signs: chapter%2.pdf", async () => {
+      expect(isSafeFileName("chapter%2.pdf")).toBe(true);
+
+      const filePath = `user_test_abc/${validProjectId}/${validMaterialId}/chapter%2.pdf`;
+      expect(
+        validateStoragePath({
+          filePath,
+          userId: "user_test_abc",
+          projectId: validProjectId,
+          materialId: validMaterialId,
+          fileName: "chapter%2.pdf",
+        })
+      ).toBe(true);
+
+      const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: "chapter%2.pdf",
+          fileType: "application/pdf",
+          fileSize: 4096,
+        }),
+      });
+
+      const res = await uploadUrlPOST(req, {
+        params: Promise.resolve({ projectId: validProjectId }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.filePath).toContain("chapter%2.pdf");
+    });
+
+    it("rejects encoded path separators and encoded traversal sequences", () => {
+      expect(isSafeFileName("lecture%2fnotes.pdf")).toBe(false);
+      expect(isSafeFileName("lecture%2Fnotes.pdf")).toBe(false);
+      expect(isSafeFileName("lecture%5cnotes.pdf")).toBe(false);
+      expect(isSafeFileName("lecture%5Cnotes.pdf")).toBe(false);
+      expect(isSafeFileName("lecture%252fnotes.pdf")).toBe(false);
+      expect(isSafeFileName("%2e%2e")).toBe(false);
+      expect(isSafeFileName("%2e")).toBe(false);
+      expect(isSafeFileName(".%2e")).toBe(false);
+      expect(isSafeFileName("%2e.")).toBe(false);
+      expect(isSafeFileName("%252e%252e")).toBe(false);
+      expect(isSafeFileName("null%00byte.pdf")).toBe(false);
+    });
+  });
+
+  // ── Step E: PostgREST Filter-Special Character Finalization & Idempotency ───
+
+  describe("PostgREST Filter-Special Characters in Filenames", () => {
+    const specialFilenames = [
+      "report,final.pdf",
+      "report(final).pdf",
+      "report%20final.pdf",
+      "report&notes.pdf",
+    ];
+
+    for (const specialFileName of specialFilenames) {
+      describe(`Filename: "${specialFileName}"`, () => {
+        const specialFilePath = `user_test_abc/${validProjectId}/${validMaterialId}/${specialFileName}`;
+
+        it("initial finalization works correctly without PostgREST filter parsing breakage", async () => {
+          mockInsertSingle.mockResolvedValue({
+            data: {
+              id: validMaterialId,
+              project_id: validProjectId,
+              user_id: "user_test_abc",
+              file_name: specialFileName,
+              file_path: specialFilePath,
+              file_type: "application/pdf",
+              status: "queued",
+              size_bytes: 1024,
+            },
+            error: null,
+          });
+
+          const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId: validMaterialId,
+              fileName: specialFileName,
+              filePath: specialFilePath,
+              fileType: "application/pdf",
+              fileSize: 1024,
+            }),
+          });
+
+          const res = await finalizePOST(req, {
+            params: Promise.resolve({ projectId: validProjectId }),
+          });
+
+          expect(res.status).toBe(201);
+          expect(mockInsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: validMaterialId,
+              file_name: specialFileName,
+              file_path: specialFilePath,
+            })
+          );
+          expect(mockInngestSend).toHaveBeenCalledTimes(1);
+        });
+
+        it("idempotency lookup finds existing material on retry and does not create duplicate", async () => {
+          const existing = {
+            id: validMaterialId,
+            project_id: validProjectId,
+            user_id: "user_test_abc",
+            file_name: specialFileName,
+            file_path: specialFilePath,
+            file_type: "application/pdf",
+            status: "ready",
+            size_bytes: 1024,
+          };
+          mockExistingMaterial = existing;
+
+          const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId: validMaterialId,
+              fileName: specialFileName,
+              filePath: specialFilePath,
+              fileType: "application/pdf",
+              fileSize: 1024,
+            }),
+          });
+
+          const res = await finalizePOST(req, {
+            params: Promise.resolve({ projectId: validProjectId }),
+          });
+
+          expect(res.status).toBe(200);
+          const json = await res.json();
+          expect(json.material.id).toBe(validMaterialId);
+          expect(mockInsert).not.toHaveBeenCalled();
+          expect(mockStorageRemove).not.toHaveBeenCalled();
+          expect(mockInngestSend).not.toHaveBeenCalled();
+        });
+
+        it("referenced Storage object is never deleted when record exists", async () => {
+          // If DB insert fails because material already exists (concurrent insert or constraint violation)
+          mockInsertSingle.mockResolvedValue({
+            data: null,
+            error: { message: "duplicate key value violates unique constraint" },
+          });
+          mockExistingMaterial = null;
+          mockReferencingMaterial = {
+            id: validMaterialId,
+            project_id: validProjectId,
+            user_id: "user_test_abc",
+            file_name: specialFileName,
+            file_path: specialFilePath,
+            status: "queued",
+          };
+
+          const postReq = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId: validMaterialId,
+              fileName: specialFileName,
+              filePath: specialFilePath,
+              fileType: "application/pdf",
+              fileSize: 1024,
+            }),
+          });
+
+          const postRes = await finalizePOST(postReq, {
+            params: Promise.resolve({ projectId: validProjectId }),
+          });
+
+          expect(postRes.status).toBe(200);
+          expect(mockStorageRemove).not.toHaveBeenCalled();
+
+          // And DELETE request must reject with 409 and not delete
+          const deleteReq = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId: validMaterialId,
+              filePath: specialFilePath,
+            }),
+          });
+
+          const deleteRes = await finalizeDELETE(deleteReq, {
+            params: Promise.resolve({ projectId: validProjectId }),
+          });
+
+          expect(deleteRes.status).toBe(409);
+          expect(mockStorageRemove).not.toHaveBeenCalled();
+        });
+      });
+    }
   });
 });

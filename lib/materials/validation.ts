@@ -95,6 +95,9 @@ export function resolveCanonicalFileType(fileName: string, mimeType?: string): s
  * Validates that a filename is safe against directory traversal:
  * - Rejects dangerous path segments such as "." and ".."
  * - Rejects "/" and "\" path separators
+ * - Rejects URL-encoded path separators (%2f, %5c) and encoded traversal segments (%2e, %2e%2e)
+ * - Rejects null bytes (\0, %00)
+ * - Allows literal percent signs (e.g. "lecture%notes.pdf", "100%_accuracy.pdf", "chapter%2.pdf")
  * - Allows legitimate consecutive dots inside filenames (e.g. "lecture..pdf", "v1..notes.md")
  */
 export function isSafeFileName(fileName: string): boolean {
@@ -102,18 +105,47 @@ export function isSafeFileName(fileName: string): boolean {
   const trimmed = fileName.trim();
   if (!trimmed) return false;
 
-  // Reject "/" and "\" path separators
+  // Reject null bytes
+  if (trimmed.includes("\0") || /%00/i.test(trimmed)) return false;
+
+  // Reject raw "/" and "\" path separators
   if (trimmed.includes("/") || trimmed.includes("\\")) return false;
 
   // Reject dangerous path segments "." and ".."
   if (trimmed === "." || trimmed === "..") return false;
 
-  // Check URL-decoded representation to prevent encoded traversal (%2e%2e, %2f, %5c)
-  try {
-    const decoded = decodeURIComponent(trimmed);
-    if (decoded.includes("/") || decoded.includes("\\")) return false;
-    if (decoded === "." || decoded === "..") return false;
-  } catch {
+  // Reject encoded path separators: %2f (/) and %5c (\) including multi-encoded variants
+  if (/%(?:25)*2f/i.test(trimmed) || /%(?:25)*5c/i.test(trimmed)) {
+    return false;
+  }
+
+  // Check for encoded traversal segments:
+  // Selectively decodes valid %XX sequences so literal percent signs (%_ or %n or %2.)
+  // do not cause URIError or rejection.
+  const decoded = trimmed.replace(/%([0-9a-fA-F]{2})/g, (_, hex) => {
+    return String.fromCharCode(parseInt(hex, 16));
+  });
+
+  // Reject if an encoded slash or backslash or null byte was produced
+  if (decoded.includes("/") || decoded.includes("\\") || decoded.includes("\0")) {
+    return false;
+  }
+
+  // Reject if decoded filename forms dangerous traversal segments "." or ".."
+  if (decoded === "." || decoded === "..") {
+    return false;
+  }
+
+  // Second-pass check for double-encoded traversal (e.g. %252e%252e -> %2e%2e -> ..)
+  const doubleDecoded = decoded.replace(/%([0-9a-fA-F]{2})/g, (_, hex) => {
+    return String.fromCharCode(parseInt(hex, 16));
+  });
+
+  if (doubleDecoded.includes("/") || doubleDecoded.includes("\\") || doubleDecoded.includes("\0")) {
+    return false;
+  }
+
+  if (doubleDecoded === "." || doubleDecoded === "..") {
     return false;
   }
 
