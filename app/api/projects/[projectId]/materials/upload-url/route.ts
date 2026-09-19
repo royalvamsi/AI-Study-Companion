@@ -5,6 +5,7 @@ import {
   MAX_MATERIAL_FILE_SIZE,
   resolveCanonicalFileType,
   generateStoragePath,
+  isSafeFileName,
 } from "@/lib/materials/validation";
 
 /**
@@ -55,9 +56,9 @@ export async function POST(
 
     const { fileName, fileType, fileSize } = body;
 
-    if (!fileName || typeof fileName !== "string") {
+    if (!fileName || typeof fileName !== "string" || !isSafeFileName(fileName)) {
       return NextResponse.json(
-        { error: "fileName is required" },
+        { error: "Valid fileName is required without dangerous path segments or separators" },
         { status: 400 }
       );
     }

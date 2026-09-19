@@ -131,7 +131,6 @@ export function ProjectDetailContent({
 
       setUploading(true);
       let targetFilePath: string | null = null;
-      let storageUploadSucceeded = false;
       const supabase = createClient();
 
       try {
@@ -186,8 +185,6 @@ export function ProjectDetailContent({
           return;
         }
 
-        storageUploadSucceeded = true;
-
         // Step 3: Finalize metadata (small JSON payload)
         const finalizeRes = await fetch(
           `/api/projects/${project.id}/materials/finalize`,
@@ -209,20 +206,28 @@ export function ProjectDetailContent({
             .json()
             .catch(() => ({ error: `Finalize failed (${finalizeRes.status})` }));
           setUploadError(err.error || "Material finalization failed. Please try again.");
+
+          // If finalize failed with a 4xx validation error (before DB insert), request safe server-side cleanup.
+          // The server-side contract guarantees the object will never be deleted if any material record references it.
+          if (finalizeRes.status >= 400 && finalizeRes.status < 500 && targetFilePath) {
+            try {
+              await fetch(`/api/projects/${project.id}/materials/finalize`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ materialId, filePath: targetFilePath }),
+              });
+            } catch (cleanupErr) {
+              console.warn("Server safe-cleanup request error:", cleanupErr);
+            }
+          }
           return;
         }
 
         router.refresh();
       } catch (err) {
         console.error("Upload error:", err);
-        // If storage upload succeeded but finalize failed with network error, attempt client cleanup
-        if (storageUploadSucceeded && targetFilePath) {
-          try {
-            await supabase.storage.from("materials").remove([targetFilePath]);
-          } catch (cleanupErr) {
-            console.warn("Storage cleanup error:", cleanupErr);
-          }
-        }
+        // Do NOT blindly delete the Storage object from the browser after finalize failures
+        // because DB insertion may already have succeeded while the network response was lost.
         setUploadError(
           err instanceof Error
             ? err.message
