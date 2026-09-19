@@ -166,6 +166,34 @@ export async function handleMaterialProcessingFailure({
   return { materialId, status: "failed", errorMessage: userSafeMessage };
 }
 
+/**
+ * Verifies whether a material record still exists in the database.
+ * - Returns true if the material exists.
+ * - Returns false if the material was deleted / no row exists (and no query error occurred).
+ * - Throws an Error if a database/network error occurs so Inngest can retry.
+ */
+export async function isMaterialPresent(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  materialId: string
+): Promise<boolean> {
+  const checkQuery = supabase.from("materials").select("id").eq("id", materialId);
+  const { data, error } =
+    typeof checkQuery.maybeSingle === "function"
+      ? await checkQuery.maybeSingle()
+      : await checkQuery.single();
+
+  if (error) {
+    // When using .single() fallback/mocks, PGRST116 indicates 0 rows found (not a database failure)
+    if (error.code === "PGRST116" || error.message?.includes("0 rows")) {
+      return false;
+    }
+    throw new Error(`Failed to check material existence for ${materialId}: ${error.message}`);
+  }
+
+  return Boolean(data);
+}
+
 export async function executeProcessMaterialStep1({
   materialId,
   projectId,
@@ -191,7 +219,18 @@ export async function executeProcessMaterialStep1({
       ? await query.maybeSingle()
       : await query.single();
 
-  if (fetchError || !existing) {
+  if (fetchError) {
+    // When using .single() fallback/mocks, PGRST116 indicates 0 rows found
+    if (fetchError.code === "PGRST116" || fetchError.message?.includes("0 rows")) {
+      console.warn(
+        `[processMaterial] Skipping run for material ${materialId}; record not found or already deleted`
+      );
+      return false;
+    }
+    throw new Error(`Failed to fetch material ${materialId}: ${fetchError.message}`);
+  }
+
+  if (!existing) {
     console.warn(
       `[processMaterial] Skipping run for material ${materialId}; record not found or already deleted`
     );
@@ -442,12 +481,7 @@ export const processMaterial = inngest.createFunction(
     // ── Step 4: Search/Retrieval Representation (Embeddings & Storage) ─────
     await step.run("generate-and-store-chunks", async () => {
       // Race condition protection: ensure material still exists before writing chunks
-      const checkQuery = supabase.from("materials").select("id").eq("id", materialId);
-      const { data: materialExists } =
-        typeof checkQuery.maybeSingle === "function"
-          ? await checkQuery.maybeSingle()
-          : await checkQuery.single();
-
+      const materialExists = await isMaterialPresent(supabase, materialId);
       if (!materialExists) {
         console.warn(`[processMaterial] Skipping chunk storage: material ${materialId} was deleted`);
         return;
@@ -475,12 +509,7 @@ export const processMaterial = inngest.createFunction(
     // ── Step 7: Extract concepts via LLM ─────────────────────────────────────
     await step.run("extract-concepts", async () => {
       // Race condition protection: ensure material still exists before creating concepts
-      const checkQuery = supabase.from("materials").select("id").eq("id", materialId);
-      const { data: materialExists } =
-        typeof checkQuery.maybeSingle === "function"
-          ? await checkQuery.maybeSingle()
-          : await checkQuery.single();
-
+      const materialExists = await isMaterialPresent(supabase, materialId);
       if (!materialExists) {
         console.warn(`[processMaterial] Skipping concept extraction: material ${materialId} was deleted`);
         return;
@@ -526,12 +555,7 @@ export const processMaterial = inngest.createFunction(
     // ── Step 8: Mark ready ───────────────────────────────────────────────────
     await step.run("mark-ready", async () => {
       // Race condition protection: ensure material still exists before updating status
-      const checkQuery = supabase.from("materials").select("id").eq("id", materialId);
-      const { data: materialExists } =
-        typeof checkQuery.maybeSingle === "function"
-          ? await checkQuery.maybeSingle()
-          : await checkQuery.single();
-
+      const materialExists = await isMaterialPresent(supabase, materialId);
       if (!materialExists) {
         console.warn(`[processMaterial] Skipping mark-ready: material ${materialId} was deleted`);
         return;

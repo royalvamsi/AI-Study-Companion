@@ -55,7 +55,10 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 import { DELETE } from "./route";
 import { deleteMaterial } from "@/lib/materials/delete";
-import { executeProcessMaterialStep1 } from "@/inngest/material-processing";
+import {
+  executeProcessMaterialStep1,
+  isMaterialPresent,
+} from "@/inngest/material-processing";
 
 describe("DELETE /api/projects/[projectId]/materials/[materialId] — Production Material Deletion Security & Cleanup", () => {
   const authenticatedUserId = "2f444c89-4a36-453f-bcd7-09feb59f752a";
@@ -532,8 +535,8 @@ describe("DELETE /api/projects/[projectId]/materials/[materialId] — Production
   });
 
   it("14. processing/deletion race condition is protected in Inngest pipeline", async () => {
-    // When a material is deleted while Inngest starts, executeProcessMaterialStep1 gracefully skips
-    const mockSupabase = {
+    // A. When a material is cleanly deleted, executeProcessMaterialStep1 gracefully skips (returns false)
+    const mockSupabaseCleanDelete = {
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -551,11 +554,58 @@ describe("DELETE /api/projects/[projectId]/materials/[materialId] — Production
       projectId: validProjectId,
       userId: authenticatedUserId,
       fileName: "race-condition.pdf",
-      supabase: mockSupabase,
+      supabase: mockSupabaseCleanDelete,
     });
-
-    // Must return false without throwing or recreating chunks/concepts
     expect(shouldProcess).toBe(false);
+
+    // B. When a database/network error occurs during step 1, it must THROW so Inngest can retry
+    const mockSupabaseError = {
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: "connection reset by peer", code: "ECONNRESET" },
+            }),
+          }),
+        }),
+      }),
+    };
+
+    await expect(
+      executeProcessMaterialStep1({
+        materialId: validMaterialId,
+        projectId: validProjectId,
+        userId: authenticatedUserId,
+        fileName: "race-condition.pdf",
+        supabase: mockSupabaseError,
+      })
+    ).rejects.toThrow(/Failed to fetch material.*connection reset by peer/);
+
+    // C. Verify isMaterialPresent helper behaves identically:
+    // - Missing material -> returns false (safely skips downstream work)
+    const isPresent = await isMaterialPresent(mockSupabaseCleanDelete, validMaterialId);
+    expect(isPresent).toBe(false);
+
+    // - Database error -> throws Error (allowing Inngest to retry step)
+    await expect(
+      isMaterialPresent(mockSupabaseError, validMaterialId)
+    ).rejects.toThrow(/Failed to check material existence.*connection reset by peer/);
+
+    // - Existing material -> returns true
+    const mockSupabasePresent = {
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: validMaterialId },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    };
+    expect(await isMaterialPresent(mockSupabasePresent, validMaterialId)).toBe(true);
   });
 
   it("15. client cannot control or inject the storage path", async () => {

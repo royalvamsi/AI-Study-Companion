@@ -298,7 +298,7 @@ export function ProjectDetailContent({
     [project.id, router]
   );
 
-  const readyMaterials = materials.filter((m) => m.status === "ready");
+  const readyMaterials = currentMaterials.filter((m) => m.status === "ready");
 
   return (
     <div className="min-h-full bg-[#F5F3EE] text-ink font-sans antialiased p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-8 selection:bg-orange/20 selection:text-orange">
@@ -395,7 +395,7 @@ export function ProjectDetailContent({
             <p className="text-2xl font-bold text-ink tracking-tight font-sans">
               {readyMaterials.length}
               <span className="text-xs text-neutral-400 font-normal ml-1">
-                /{materials.length}
+                /{currentMaterials.length}
               </span>
             </p>
             <p className="text-[11px] text-neutral-500 font-sans">Materials Ready</p>
