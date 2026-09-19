@@ -130,16 +130,20 @@ export async function POST(
     }
 
     // 6. Idempotency Check:
-    // If the same materialId/filePath has already been successfully finalized for the authenticated user's project:
-    // - return the existing material
-    // - do not insert a duplicate row
-    // - do not delete the Storage object
-    // - do not emit a duplicate Inngest event
+    // A material is idempotently reusable ONLY when the existing record matches the same logical upload:
+    // - materialId
+    // - authenticated user
+    // - projectId
+    // - exact filePath
+    //
+    // If materialId matches but filePath differs, this is NOT an idempotent retry;
+    // it must return a conflict (409) rather than returning the existing material.
+    // Similarly, if filePath is already referenced by an existing material with a different materialId,
+    // it is also a conflict (409) and the existing storage object must never be overwritten/deleted.
+    //
     // We execute separate .eq() lookups to avoid interpolating raw filePaths into PostgREST filter strings,
     // which can fail on filenames containing commas, parentheses, or filter delimiters.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let existingMaterial = null;
-
     const { data: materialById } = await (supabase.from("materials") as any)
       .select()
       .eq("project_id", projectId)
@@ -148,22 +152,30 @@ export async function POST(
       .maybeSingle();
 
     if (materialById) {
-      existingMaterial = materialById;
-    } else {
-      const { data: materialByPath } = await (supabase.from("materials") as any)
-        .select()
-        .eq("project_id", projectId)
-        .eq("user_id", user.id)
-        .eq("file_path", filePath)
-        .maybeSingle();
-
-      if (materialByPath) {
-        existingMaterial = materialByPath;
+      if (materialById.file_path === filePath) {
+        // True idempotent retry: exact same upload (materialId, project_id, user_id, filePath)
+        return NextResponse.json({ material: materialById }, { status: 200 });
       }
+      // Same materialId but different filePath: conflict, not an idempotent retry
+      return NextResponse.json(
+        { error: "Conflict: a material with this ID already exists with a different file path" },
+        { status: 409 }
+      );
     }
 
-    if (existingMaterial) {
-      return NextResponse.json({ material: existingMaterial }, { status: 200 });
+    const { data: materialByPath } = await (supabase.from("materials") as any)
+      .select()
+      .eq("project_id", projectId)
+      .eq("user_id", user.id)
+      .eq("file_path", filePath)
+      .maybeSingle();
+
+    if (materialByPath) {
+      // Same filePath already referenced by an existing material (different materialId)
+      return NextResponse.json(
+        { error: "Conflict: this storage file path is already referenced by an existing material" },
+        { status: 409 }
+      );
     }
 
     // 7. Verify that the storage object actually exists at expected path
@@ -220,38 +232,26 @@ export async function POST(
     if (insertError) {
       console.error("[finalize] DB insert failed:", insertError);
 
-      // Verify if a material record already references this materialId or filePath.
+      // Verify if a material record already references this exact filePath.
+      // The authoritative condition for whether a storage object is referenced is exact file_path match.
+      // A record with matching materialId but differing file_path does NOT reference this storage object.
       // Never delete a Storage object that is already referenced by an existing material record.
-      // Use separate exact .eq() queries to avoid PostgREST filter string parsing issues.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let referencingMaterial = null;
-
-      const { data: refById } = await (adminSupabase.from("materials") as any)
+      const { data: referencingMaterial } = await (adminSupabase.from("materials") as any)
         .select()
-        .eq("id", materialId)
+        .eq("file_path", filePath)
         .maybeSingle();
-
-      if (refById) {
-        referencingMaterial = refById;
-      } else {
-        const { data: refByPath } = await (adminSupabase.from("materials") as any)
-          .select()
-          .eq("file_path", filePath)
-          .maybeSingle();
-
-        if (refByPath) {
-          referencingMaterial = refByPath;
-        }
-      }
 
       if (referencingMaterial) {
         if (
+          referencingMaterial.id === materialId &&
           referencingMaterial.project_id === projectId &&
           referencingMaterial.user_id === user.id
         ) {
-          // Idempotent recovery: material already exists for this project, return safely
+          // Idempotent recovery: material already exists for this exact upload, return safely
           return NextResponse.json({ material: referencingMaterial }, { status: 200 });
         }
+        // Referencing material exists (e.g. different materialId or project), do NOT delete Storage
         return NextResponse.json(
           { error: `Failed to create record: ${insertError.message}` },
           { status: 500 }
@@ -404,29 +404,15 @@ export async function DELETE(
       );
     }
 
-    // 5. Check if any material record references this storage object.
-    // Use separate exact .eq() queries to avoid PostgREST filter string parsing issues.
+    // 5. Check if any material record references this exact storage object path.
+    // The authoritative condition for whether a storage object is referenced is exact file_path match.
+    // A record with matching materialId but differing file_path does NOT reference this storage object.
     const adminSupabase = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let referencingMaterial = null;
-
-    const { data: refById } = await (adminSupabase.from("materials") as any)
+    const { data: referencingMaterial } = await (adminSupabase.from("materials") as any)
       .select("id")
-      .eq("id", materialId)
+      .eq("file_path", filePath)
       .maybeSingle();
-
-    if (refById) {
-      referencingMaterial = refById;
-    } else {
-      const { data: refByPath } = await (adminSupabase.from("materials") as any)
-        .select("id")
-        .eq("file_path", filePath)
-        .maybeSingle();
-
-      if (refByPath) {
-        referencingMaterial = refByPath;
-      }
-    }
 
     if (referencingMaterial) {
       // NEVER delete a storage object that is referenced by an existing material record

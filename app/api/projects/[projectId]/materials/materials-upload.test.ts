@@ -24,7 +24,24 @@ vi.mock("@/lib/activity/events", () => ({
 let mockUser: { id: string } | null = { id: "user_test_abc" };
 let mockProject: { id: string } | null = { id: "550e8400-e29b-41d4-a716-446655440000" };
 let mockExistingMaterial: any = null;
-let mockReferencingMaterial: any = null;
+let mockReferencingMaterial: any = undefined;
+
+const matchMaterial = (item: any, filters: Record<string, any>) => {
+  if (!item) return false;
+  if (filters.id && item.id && filters.id !== item.id) return false;
+  if (filters.file_path && item.file_path && filters.file_path !== item.file_path) return false;
+  if (filters.project_id && item.project_id && filters.project_id !== item.project_id) return false;
+  if (filters.user_id && item.user_id && filters.user_id !== item.user_id) return false;
+  return true;
+};
+
+const findMatchingMaterial = (target: any, filters: Record<string, any>) => {
+  if (!target) return null;
+  if (Array.isArray(target)) {
+    return target.find((item) => matchMaterial(item, filters)) || null;
+  }
+  return matchMaterial(target, filters) ? target : null;
+};
 
 const mockStorageExists = vi.fn();
 const mockStorageList = vi.fn();
@@ -78,16 +95,8 @@ vi.mock("@/lib/supabase/server", () => ({
               }),
               or: vi.fn().mockImplementation(() => builder),
               maybeSingle: vi.fn().mockImplementation(() => {
-                if (!mockExistingMaterial) {
-                  return Promise.resolve({ data: null, error: null });
-                }
-                if (filters.id && mockExistingMaterial.id && filters.id !== mockExistingMaterial.id) {
-                  return Promise.resolve({ data: null, error: null });
-                }
-                if (filters.file_path && mockExistingMaterial.file_path && filters.file_path !== mockExistingMaterial.file_path) {
-                  return Promise.resolve({ data: null, error: null });
-                }
-                return Promise.resolve({ data: mockExistingMaterial, error: null });
+                const found = findMatchingMaterial(mockExistingMaterial, filters);
+                return Promise.resolve({ data: found, error: null });
               }),
               single: vi.fn().mockImplementation(() =>
                 Promise.resolve({ data: mockExistingMaterial, error: null })
@@ -124,16 +133,8 @@ vi.mock("@/lib/supabase/admin", () => ({
           or: vi.fn().mockImplementation(() => builder),
           maybeSingle: vi.fn().mockImplementation(() => {
             const target = mockReferencingMaterial !== undefined ? mockReferencingMaterial : mockExistingMaterial;
-            if (!target) {
-              return Promise.resolve({ data: null, error: null });
-            }
-            if (filters.id && target.id && filters.id !== target.id) {
-              return Promise.resolve({ data: null, error: null });
-            }
-            if (filters.file_path && target.file_path && filters.file_path !== target.file_path) {
-              return Promise.resolve({ data: null, error: null });
-            }
-            return Promise.resolve({ data: target, error: null });
+            const found = findMatchingMaterial(target, filters);
+            return Promise.resolve({ data: found, error: null });
           }),
           single: vi.fn().mockImplementation(() => {
             const target = mockReferencingMaterial !== undefined ? mockReferencingMaterial : mockExistingMaterial;
@@ -171,7 +172,7 @@ describe("Direct Material Upload Architecture", () => {
     mockUser = { id: "user_test_abc" };
     mockProject = { id: validProjectId };
     mockExistingMaterial = null;
-    mockReferencingMaterial = null;
+    mockReferencingMaterial = undefined;
 
     mockCreateSignedUploadUrl.mockResolvedValue({
       data: {
@@ -790,6 +791,304 @@ describe("Direct Material Upload Architecture", () => {
       const json = await res.json();
       expect(json.error).toContain("referenced by an existing material record");
       expect(mockStorageRemove).not.toHaveBeenCalled();
+    });
+
+    describe("Correct Idempotency & Safe Storage Reference Check Semantics", () => {
+      it("Case A: Same materialId + same filePath → idempotent success, Storage preserved", async () => {
+        const existing = {
+          id: validMaterialId,
+          project_id: validProjectId,
+          user_id: "user_test_abc",
+          file_name: "lecture.pdf",
+          file_path: validFilePath,
+          file_type: "application/pdf",
+          status: "ready",
+          size_bytes: 1024,
+        };
+        mockExistingMaterial = existing;
+
+        const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialId: validMaterialId,
+            fileName: "lecture.pdf",
+            filePath: validFilePath,
+            fileType: "application/pdf",
+            fileSize: 1024,
+          }),
+        });
+
+        const res = await finalizePOST(req, {
+          params: Promise.resolve({ projectId: validProjectId }),
+        });
+
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.material).toEqual(existing);
+        expect(mockInsert).not.toHaveBeenCalled();
+        expect(mockStorageRemove).not.toHaveBeenCalled();
+        expect(mockInngestSend).not.toHaveBeenCalled();
+      });
+
+      it("Case B: Same materialId + different filePath → conflict, does not claim idempotent success, and unreferenced file can be safely cleaned up", async () => {
+        const existing = {
+          id: validMaterialId,
+          project_id: validProjectId,
+          user_id: "user_test_abc",
+          file_name: "original.pdf",
+          file_path: `user_test_abc/${validProjectId}/${validMaterialId}/original.pdf`,
+          file_type: "application/pdf",
+          status: "ready",
+          size_bytes: 1024,
+        };
+        mockExistingMaterial = existing;
+
+        const differentFilePath = `user_test_abc/${validProjectId}/${validMaterialId}/different.pdf`;
+
+        const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialId: validMaterialId,
+            fileName: "different.pdf",
+            filePath: differentFilePath,
+            fileType: "application/pdf",
+            fileSize: 2048,
+          }),
+        });
+
+        const res = await finalizePOST(req, {
+          params: Promise.resolve({ projectId: validProjectId }),
+        });
+
+        // Must return 409 Conflict rather than silently returning existing material
+        expect(res.status).toBe(409);
+        const json = await res.json();
+        expect(json.error).toContain("already exists with a different file path");
+        expect(mockInsert).not.toHaveBeenCalled();
+        expect(mockInngestSend).not.toHaveBeenCalled();
+        expect(mockStorageRemove).not.toHaveBeenCalled();
+
+        // Crucial: differentFilePath is NOT considered referenced by existing material
+        // Client safe-cleanup DELETE must succeed in cleaning up differentFilePath
+        const deleteReq = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialId: validMaterialId,
+            filePath: differentFilePath,
+          }),
+        });
+
+        const deleteRes = await finalizeDELETE(deleteReq, {
+          params: Promise.resolve({ projectId: validProjectId }),
+        });
+
+        expect(deleteRes.status).toBe(200);
+        const deleteJson = await deleteRes.json();
+        expect(deleteJson.success).toBe(true);
+        expect(mockStorageRemove).toHaveBeenCalledWith([differentFilePath]);
+        // Verify original.pdf was NOT removed
+        expect(mockStorageRemove).not.toHaveBeenCalledWith([existing.file_path]);
+      });
+
+      it("Case C: Different materialId + same filePath → reference detected, rejects POST (409) and DELETE refuses to delete (409)", async () => {
+        const otherMaterialId = "11111111-2222-3333-4444-555555555555";
+        const existing = {
+          id: otherMaterialId,
+          project_id: validProjectId,
+          user_id: "user_test_abc",
+          file_name: "lecture.pdf",
+          file_path: validFilePath,
+          file_type: "application/pdf",
+          status: "ready",
+          size_bytes: 1024,
+        };
+        mockExistingMaterial = existing;
+
+        // Incoming finalize has different materialId (validMaterialId) but same filePath
+        const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialId: validMaterialId,
+            fileName: "lecture.pdf",
+            filePath: validFilePath,
+            fileType: "application/pdf",
+            fileSize: 1024,
+          }),
+        });
+
+        const res = await finalizePOST(req, {
+          params: Promise.resolve({ projectId: validProjectId }),
+        });
+
+        expect(res.status).toBe(409);
+        const json = await res.json();
+        expect(json.error).toContain("already referenced by an existing material");
+        expect(mockInsert).not.toHaveBeenCalled();
+        expect(mockInngestSend).not.toHaveBeenCalled();
+        expect(mockStorageRemove).not.toHaveBeenCalled();
+
+        // Safe-cleanup DELETE must also detect the existing reference and refuse to delete
+        const deleteReq = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialId: validMaterialId,
+            filePath: validFilePath,
+          }),
+        });
+
+        const deleteRes = await finalizeDELETE(deleteReq, {
+          params: Promise.resolve({ projectId: validProjectId }),
+        });
+
+        expect(deleteRes.status).toBe(409);
+        const deleteJson = await deleteRes.json();
+        expect(deleteJson.error).toContain("referenced by an existing material record");
+        expect(mockStorageRemove).not.toHaveBeenCalled();
+      });
+
+      it("Case D: Different materialId + different filePath → unreferenced Storage object safely cleaned up", async () => {
+        const otherMaterialId = "11111111-2222-3333-4444-555555555555";
+        const otherFilePath = `user_test_abc/${validProjectId}/${otherMaterialId}/other.pdf`;
+        mockExistingMaterial = {
+          id: otherMaterialId,
+          project_id: validProjectId,
+          user_id: "user_test_abc",
+          file_name: "other.pdf",
+          file_path: otherFilePath,
+          status: "ready",
+        };
+
+        // Delete request for validMaterialId and validFilePath (which is completely unreferenced in DB)
+        const deleteReq = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialId: validMaterialId,
+            filePath: validFilePath,
+          }),
+        });
+
+        const deleteRes = await finalizeDELETE(deleteReq, {
+          params: Promise.resolve({ projectId: validProjectId }),
+        });
+
+        expect(deleteRes.status).toBe(200);
+        const deleteJson = await deleteRes.json();
+        expect(deleteJson.success).toBe(true);
+        expect(mockStorageRemove).toHaveBeenCalledWith([validFilePath]);
+        expect(mockStorageRemove).not.toHaveBeenCalledWith([otherFilePath]);
+      });
+
+      describe("Case E: Database insert fails after upload", () => {
+        it("Case E1: preserves Storage if exact filePath reference exists in DB", async () => {
+          mockInsertSingle.mockResolvedValue({
+            data: null,
+            error: { message: "duplicate key value violates unique constraint" },
+          });
+          mockExistingMaterial = null; // bypassed initial check
+          mockReferencingMaterial = {
+            id: validMaterialId,
+            project_id: validProjectId,
+            user_id: "user_test_abc",
+            file_name: "lecture.pdf",
+            file_path: validFilePath,
+            status: "queued",
+          };
+
+          const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId: validMaterialId,
+              fileName: "lecture.pdf",
+              filePath: validFilePath,
+              fileType: "application/pdf",
+              fileSize: 1024,
+            }),
+          });
+
+          const res = await finalizePOST(req, {
+            params: Promise.resolve({ projectId: validProjectId }),
+          });
+
+          expect(res.status).toBe(200);
+          const json = await res.json();
+          expect(json.material.id).toBe(validMaterialId);
+          expect(mockStorageRemove).not.toHaveBeenCalled();
+        });
+
+        it("Case E2: cleans up Storage only if that exact filePath has no material reference", async () => {
+          mockInsertSingle.mockResolvedValue({
+            data: null,
+            error: { message: "Database connection failed" },
+          });
+          mockExistingMaterial = null;
+          mockReferencingMaterial = null;
+
+          const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId: validMaterialId,
+              fileName: "lecture.pdf",
+              filePath: validFilePath,
+              fileType: "application/pdf",
+              fileSize: 1024,
+            }),
+          });
+
+          const res = await finalizePOST(req, {
+            params: Promise.resolve({ projectId: validProjectId }),
+          });
+
+          expect(res.status).toBe(500);
+          expect(mockStorageRemove).toHaveBeenCalledWith([validFilePath]);
+        });
+
+        it("Case E3: insert fails on materialId collision with different filePath cleans up the new unreferenced file", async () => {
+          const differentFilePath = `user_test_abc/${validProjectId}/${validMaterialId}/different.pdf`;
+          mockInsertSingle.mockResolvedValue({
+            data: null,
+            error: { message: "duplicate key value violates unique constraint on primary key" },
+          });
+          // DB has a row with same materialId but original file path
+          mockReferencingMaterial = {
+            id: validMaterialId,
+            project_id: validProjectId,
+            user_id: "user_test_abc",
+            file_name: "original.pdf",
+            file_path: `user_test_abc/${validProjectId}/${validMaterialId}/original.pdf`,
+            status: "ready",
+          };
+
+          const req = new Request(`http://localhost/api/projects/${validProjectId}/materials/finalize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              materialId: validMaterialId,
+              fileName: "different.pdf",
+              filePath: differentFilePath,
+              fileType: "application/pdf",
+              fileSize: 2048,
+            }),
+          });
+
+          const res = await finalizePOST(req, {
+            params: Promise.resolve({ projectId: validProjectId }),
+          });
+
+          // Exact filePath has no reference in DB, so differentFilePath is cleaned up as orphan
+          expect(res.status).toBe(500);
+          expect(mockStorageRemove).toHaveBeenCalledWith([differentFilePath]);
+          // original.pdf is NEVER removed
+          expect(mockStorageRemove).not.toHaveBeenCalledWith([mockReferencingMaterial.file_path]);
+        });
+      });
     });
   });
 
