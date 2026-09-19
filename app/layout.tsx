@@ -3,6 +3,7 @@ import { Inter, DM_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -45,6 +46,7 @@ export default function RootLayout({
           {children}
           <Toaster />
         </TooltipProvider>
+        <Analytics />
       </body>
     </html>
   );
