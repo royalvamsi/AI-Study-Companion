@@ -162,6 +162,174 @@ In accordance with the candidate challenge guidelines, AI assistance was utilize
 
 ---
 
+## 📸 Application Showcase
+
+The following screenshots showcase the **AI Study Companion** platform in its production **Paper & Ink** design system—featuring warm editorial aesthetics, document-grounded AI tutoring with verified page citations, multi-signal adaptive assessments, transparent concept mastery tracking, and platform-level telemetry.
+
+### 🎓 Learner Experience
+
+#### Learner Study Command Center
+Personalized study dashboard featuring active spaces, course projects, continue learning shortcuts, weekly study streak tracking, and recent activity history.
+
+<p align="center">
+  <img src="screenshots/learner/dashboard.png" width="92%" alt="Learner Study Command Center Dashboard" />
+</p>
+
+#### Study Spaces & Academic Organization
+Structured workspace hierarchy organizing academic disciplines, semester spaces, course projects, lecture materials, and instant study session launchers.
+
+<p align="center">
+  <img src="screenshots/learner/spaces-projects.png" width="92%" alt="Study Spaces and Course Projects Organization" />
+</p>
+
+#### Course Project Workspace & Material Hub
+Multi-document project repository displaying uploaded course materials, asynchronous document processing status, indexed topics, and quick action cards.
+
+<p align="center">
+  <img src="screenshots/learner/project-workspace.png" width="92%" alt="Course Project Workspace and Material Hub" />
+</p>
+
+#### Learning Growth & Concept Mastery Engine
+Dynamic mastery progression interface featuring an AI Coach Growth Narrative, trend classifications (Mastered, In Progress, Needs Review), and granular concept-by-concept scoring.
+
+<p align="center">
+  <img src="screenshots/learner/growth-mastery.png" width="92%" alt="Learning Growth and Concept Mastery Tracking" />
+</p>
+
+#### Deterministic Study Recommendations
+Actionable, prioritized revision tasks generated deterministically from student concept mastery scores and assessment performance with one-click study actions.
+
+<p align="center">
+  <img src="screenshots/learner/study-recommendations.png" width="92%" alt="Deterministic Study Recommendations" />
+</p>
+
+#### Cross-Project Learning Analytics
+Global academic intelligence tracking aggregate mastery progression, historical assessment performance across all spaces, and AI model utilization distribution.
+
+<p align="center">
+  <img src="screenshots/learner/global-analytics.png" width="92%" alt="Cross-Project Learning Analytics" />
+</p>
+
+#### Course Performance & Token Telemetry
+Course-specific diagnostics showcasing assessment score histories, individual concept proficiency breakdowns, and exact AI compute costs and token consumption.
+
+<p align="center">
+  <img src="screenshots/learner/project-analytics.png" width="92%" alt="Course Performance and Token Telemetry" />
+</p>
+
+### 🤖 AI Study Experience
+
+#### AI Study Companion — Document-Grounded Tutor with Citations
+Interactive AI study partner powered by Google Gemini with live streaming responses, strict material scoping, inline source page citations, dynamic comparison tables, and strict refusal of out-of-scope queries.
+
+<p align="center">
+  <img src="screenshots/learner/ai-study-tutor.png" width="92%" alt="Document-Grounded AI Study Companion with Citations" />
+</p>
+
+#### AI Tutor Workspace & Guided Inquiry
+Distraction-free conversational interface providing suggested study starters, multi-turn reasoning, concept breakdowns, and contextual learning prompts.
+
+<p align="center">
+  <img src="screenshots/learner/ai-tutor-landing.png" width="92%" alt="AI Tutor Workspace and Guided Inquiry" />
+</p>
+
+#### Adaptive Quiz Generation Engine
+Multi-signal assessment engine that deterministically prioritizes student concept weaknesses, error histories, and topic staleness to construct balanced, grounded quizzes.
+
+<p align="center">
+  <img src="screenshots/learner/adaptive-quiz.png" width="92%" alt="Adaptive Quiz Generation Engine" />
+</p>
+
+#### Grounded Quiz & Rubric Evaluation Workspace
+Focused assessment interface delivering verified 4-option MCQs and open-ended questions graded against structured rubrics with strengths and concept gap identification.
+
+<p align="center">
+  <img src="screenshots/learner/quiz-workspace.png" width="92%" alt="Grounded Quiz and Rubric Evaluation Workspace" />
+</p>
+
+### 🛠️ Admin Experience
+
+#### Operations & Intelligence Dashboard
+Centralized administrator console delivering real-time platform monitoring, active user metrics, Inngest background job health, AI token throughput, and estimated USD compute expenditures.
+
+<p align="center">
+  <img src="screenshots/admin/dashboard.png" width="92%" alt="Admin Operations and Intelligence Dashboard" />
+</p>
+
+#### Platform Overview & System Health Monitoring
+Real-time infrastructure health monitor showing service uptimes, database connectivity, Inngest queue status, and Gemini API operational latency.
+
+<p align="center">
+  <img src="screenshots/admin/system-health.png" width="92%" alt="Platform Overview and System Health Monitoring" />
+</p>
+
+#### Users & Study Spaces Directory
+User governance directory tracking registered learners, space allocations, project counts, and providing direct navigation into individual student inspection audits.
+
+<p align="center">
+  <img src="screenshots/admin/users-spaces.png" width="92%" alt="Admin Users and Study Spaces Management" />
+</p>
+
+#### Course Projects & Material Indexing
+Platform-wide inventory of all active academic study spaces, course projects, uploaded lecture documents, and total indexed knowledge concepts.
+
+<p align="center">
+  <img src="screenshots/admin/projects.png" width="92%" alt="Course Projects and Material Indexing" />
+</p>
+
+#### Real-Time Platform Activity Audit Feed
+Live, filterable audit stream capturing user registrations, material upload ingestions, tutor queries, and completed assessment attempts.
+
+<p align="center">
+  <img src="screenshots/admin/platform-activity.png" width="92%" alt="Real-Time Platform Activity Audit Feed" />
+</p>
+
+#### Learning Analytics & Academic Performance
+Macro-level academic intelligence analyzing platform-wide quiz pass rates, concept mastery distributions, and student learning trends over time.
+
+<p align="center">
+  <img src="screenshots/admin/learning-analytics.png" width="92%" alt="Learning Analytics and Academic Performance" />
+</p>
+
+#### AI Telemetry & Cost Monitoring
+Granular per-request telemetry auditing model routing (`gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-embedding-001`), token counts, latency in milliseconds, and exact USD cost attribution.
+
+<p align="center">
+  <img src="screenshots/admin/ai-telemetry.png" width="92%" alt="AI Telemetry and Cost Monitoring" />
+</p>
+
+#### Background Ingestion Jobs & Processing Diagnostics
+Asynchronous pipeline diagnostics tracking Inngest job runs, document parsing stages, embedding generation throughput, and failure logs.
+
+<p align="center">
+  <img src="screenshots/admin/background-jobs.png" width="92%" alt="Background Ingestion Jobs and Diagnostics" />
+</p>
+
+#### Learner Profile & Telemetry Inspection
+Deep-dive learner inspection modal providing complete visibility into student study spaces, course projects, mastery states, assessment histories, and AI compute spend.
+
+<p align="center">
+  <img src="screenshots/admin/learner-inspection.png" width="92%" alt="Learner Profile and Telemetry Inspection" />
+</p>
+
+### 🔐 Authentication
+
+#### Secure Learner Sign In
+Modern authentication interface supporting secure email and password login with session persistence and database row-level security.
+
+<p align="center">
+  <img src="screenshots/auth/login.png" width="92%" alt="Secure Learner Sign In" />
+</p>
+
+#### Learner Account Registration
+Streamlined student onboarding workflow provisioning new user credentials, personal study spaces, and course workspaces.
+
+<p align="center">
+  <img src="screenshots/auth/signup.png" width="92%" alt="Learner Account Registration" />
+</p>
+
+---
+
 ## 🚀 Getting Started & Local Setup
 
 ### 1. Prerequisites
