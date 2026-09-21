@@ -23,6 +23,7 @@ export interface GenerateQuizParams {
   difficultyInstructions: string;
   contextStr: string;
   recentQuestionTexts?: string[];
+  availableConcepts?: Array<{ id: string; name: string }>;
 }
 
 const QUIZ_SCHEMA = {
@@ -35,7 +36,10 @@ const QUIZ_SCHEMA = {
         properties: {
           question_type: { type: "string", enum: ["mcq", "open_ended"] },
           question_text: { type: "string" },
-          concept_name: { type: "string" },
+          concept_name: {
+            type: "string",
+            description: "Concept tested by this question (must match an available material concept if provided)",
+          },
           options: {
             type: "array",
             items: { type: "string" },
@@ -172,12 +176,24 @@ GROUNDING & INTEGRITY RULES:
    - Provide a helpful pedagogical hint that guides thinking without giving away the answer.
    - Include the source page number from the text if available.`;
 
+  const candidateConceptNames = (params.availableConcepts ?? [])
+    .map((c) => c.name.trim())
+    .filter(Boolean);
+
+  const conceptInstruction =
+    candidateConceptNames.length > 0
+      ? `\nMANDATORY CONCEPT SELECTION:
+For each generated question, the "concept_name" field MUST match one of the following explicit concepts:
+${candidateConceptNames.map((c) => `- "${c}"`).join("\n")}
+Do not invent unrelated concept names.\n`
+      : "";
+
   const messages: TextMessage[] = [
     {
       role: "user",
       content: `TARGET CONCEPTS & ADAPTIVE DIFFICULTIES:
 ${params.difficultyInstructions}
-${
+${conceptInstruction}${
   params.recentQuestionTexts && params.recentQuestionTexts.length > 0
     ? `\nPREVIOUSLY ASKED QUESTIONS (DO NOT DUPLICATE OR REPEAT):
 ${params.recentQuestionTexts.slice(0, 8).map((q) => `- ${q}`).join("\n")}

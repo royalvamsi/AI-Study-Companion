@@ -93,6 +93,7 @@ ${text}`,
 
     return parsed.data.concepts;
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     await logAiUsage({
       userId,
       projectId,
@@ -103,10 +104,10 @@ ${text}`,
       outputTokens: 0,
       estimatedCostUsd: 0,
       status: "error",
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMsg,
     });
 
     console.error("Concept extraction failed:", error);
-    return [];
+    throw new Error(`Concept extraction failed: ${errorMsg}`);
   }
 }

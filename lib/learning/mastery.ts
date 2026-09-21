@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveConceptForQuestion } from "@/lib/learning/concept-resolver";
 
 type AssessmentWithQuestions = {
   id: string;
@@ -181,4 +182,83 @@ export async function getProjectMastery(
   if (!rows || rows.length === 0) return 0;
   const avg = rows.reduce((sum, m) => sum + m.mastery_score, 0) / rows.length;
   return Math.round(avg * 100) / 100;
+}
+
+/**
+ * Safely recover concept associations for an assessment whose questions have concept_id = null.
+ * Only resolves when an unambiguous deterministic match against project concepts exists.
+ * Does NOT invent synthetic concepts or guess.
+ */
+export async function recoverAssessmentConcepts(
+  assessmentId: string,
+  projectId: string,
+  userId: string
+): Promise<{ recoveredCount: number; updatedDeltas: ConceptMasteryDelta[] }> {
+  const supabase = createAdminClient();
+
+  // 1. Fetch unlinked questions for this assessment
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: questions } = await (supabase.from("assessment_questions") as any)
+    .select("id, question_text, concept_id, llm_response")
+    .eq("assessment_id", assessmentId)
+    .is("concept_id", null);
+
+  if (!questions || questions.length === 0) {
+    return { recoveredCount: 0, updatedDeltas: [] };
+  }
+
+  // 2. Fetch project concepts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: projectConcepts } = await (supabase.from("concepts") as any)
+    .select("id, name")
+    .eq("project_id", projectId);
+
+  if (!projectConcepts || projectConcepts.length === 0) {
+    return { recoveredCount: 0, updatedDeltas: [] };
+  }
+
+  // 3. Attempt deterministic resolution
+  let recoveredCount = 0;
+  for (const q of questions) {
+    const rawConceptName =
+      q.llm_response?.concept_name ||
+      q.llm_response?.conceptName ||
+      null;
+
+    if (!rawConceptName) continue;
+
+    const resolution = resolveConceptForQuestion(rawConceptName, projectConcepts);
+    if (resolution.conceptId) {
+      // Update assessment question
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from("assessment_questions") as any)
+        .update({
+          concept_id: resolution.conceptId,
+          llm_response: {
+            ...(typeof q.llm_response === "object" ? q.llm_response : {}),
+            concept_resolution: resolution,
+            recovered_at: new Date().toISOString(),
+          },
+        })
+        .eq("id", q.id);
+
+      recoveredCount++;
+    }
+  }
+
+  // 4. If any questions were recovered, recalculate mastery
+  let updatedDeltas: ConceptMasteryDelta[] = [];
+  if (recoveredCount > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: fullAssessment } = await (supabase.from("assessments") as any)
+      .select(`*, assessment_questions (*)`)
+      .eq("id", assessmentId)
+      .single();
+
+    if (fullAssessment) {
+      updatedDeltas = await updateMasteryAfterAssessment(fullAssessment, userId, projectId);
+    }
+  }
+
+  return { recoveredCount, updatedDeltas };
 }
