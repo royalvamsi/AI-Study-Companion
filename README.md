@@ -3,11 +3,17 @@
 > **An intelligent, production-grade AI learning partner that transforms course materials into an active, adaptive, and evidence-grounded study loop.**  
 > Built for the **AI.Prof Full Stack AI Engineer Candidate Challenge** based on **Project Requirements / PRD v3.0**.
 
-# AI Study Companion
-
-> An intelligent, production-grade AI learning partner...
 
 🔗 **Live Demo:** https://ai-study-companion-khaki.vercel.app
+
+## 🎥 Admin Dashboard Demo
+
+The public live demo focuses on the learner-facing experience.  
+Since the Admin Dashboard requires authenticated access, here's a short walkthrough demonstrating the complete admin experience and its core functionality.
+
+▶️ **[Watch Admin Dashboard Demo](https://drive.google.com/file/d/1ZOneT0m9H7odqpBRbLd6tUWvQyI9sH8g/view?usp=drive_link))**
+
+> The video demonstrates admin authentication, dashboard analytics, learner management, and key administrative workflows.
 
 ## 🎯 Executive Summary & Problem Statement
 
